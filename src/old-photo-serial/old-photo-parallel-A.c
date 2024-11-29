@@ -18,11 +18,18 @@
 #include <pthread.h>
 #include "image-lib.h"
 
+#define OLD_IMAGE_DIR "./Old-image-dir/"
+
 typedef struct input_ {
     char *filename ;  // string with the name of the file to be processed
 } input;
 
 void *process_image(void *input_struct) {
+    input *data = (input *) input_struct;
+    char *file = data->filename;
+
+    char out_file_name[100];
+
     /* input images */
 	gdImagePtr in_img;
 	/* output images */
@@ -31,12 +38,14 @@ void *process_image(void *input_struct) {
 	gdImagePtr out_textured_img;
 	gdImagePtr out_sepia_img;
 
-    printf("image %s\n", files[i]);
+	gdImagePtr in_texture_img =  read_png_file("./paper-texture.png");
+
+    printf("image %s\n", file);
     /* load of the input file */
-    in_img = read_jpeg_file(files[i]);
+    in_img = read_jpeg_file(file);
     if (in_img == NULL) {
-        fprintf(stderr, "Impossible to read %s image\n", files[i]);
-        continue;
+        fprintf(stderr, "Impossible to read %s image\n", file);
+        return NULL;
     }
 
     out_contrast_img = contrast_image(in_img);
@@ -45,7 +54,7 @@ void *process_image(void *input_struct) {
     out_sepia_img = sepia_image(out_textured_img);
 
     /* save resized */
-    sprintf(out_file_name, "%s%s", OLD_IMAGE_DIR, files[i]);
+    sprintf(out_file_name, "%s%s", OLD_IMAGE_DIR, file);
     if (write_jpeg_file(out_sepia_img, out_file_name) == 0) {
         fprintf(stderr, "Impossible to write %s image\n", out_file_name);
     }
@@ -54,6 +63,9 @@ void *process_image(void *input_struct) {
     gdImageDestroy(out_contrast_img);
     gdImageDestroy(in_img);
 }
+
+
+
 
 int main() {
     struct timespec start_time_total, end_time_total;
@@ -76,16 +88,11 @@ int main() {
     pthread_t thread_array[nn_files];
     input input_array[nn_files];
 
-
-
-
 	/* creation of output directories */
 	if (create_directory(OLD_IMAGE_DIR) == 0){
 		fprintf(stderr, "Impossible to create %s directory\n", OLD_IMAGE_DIR);
 		exit(-1);
 	}
-
-	gdImagePtr in_texture_img =  read_png_file("./paper-texture.png");
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_seq);
 	clock_gettime(CLOCK_MONOTONIC, &start_time_par);
@@ -98,4 +105,16 @@ int main() {
     }
 
 
+	clock_gettime(CLOCK_MONOTONIC, &end_time_par);
+	clock_gettime(CLOCK_MONOTONIC, &end_time_total);
+
+struct timespec par_time = diff_timespec(&end_time_par, &start_time_par);
+struct timespec seq_time = diff_timespec(&end_time_seq, &start_time_seq);
+struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
+    printf("\tseq \t %10jd.%09ld\n", seq_time.tv_sec, seq_time.tv_nsec);
+    printf("\tpar \t %10jd.%09ld\n", par_time.tv_sec, par_time.tv_nsec);
+    printf("total \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
+
+
+    return 0;
 }
