@@ -1,12 +1,3 @@
-/******************************************************************************
- * Programacao Concorrente
- * LEEC 24/25
- *
- * Projecto - Parte1
- *                           old-photo-parallel-A.c
- * 
- *****************************************************************************/
-
 #include <gd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -22,17 +13,17 @@
 #define MAX_FILENAME_LEN 256
 
 typedef struct input_ {
-    char **file_list;       // List of all file names
-    int start_index;        // Start index in the file list for this thread
-    int num_files;          // Number of files to process for this thread
-    char *output_directory; // Output directory path
+    char **file_list;
+    int start_index;
+    int num_files;
+    char *output_directory;
 } input;
 
 typedef struct command_line_options_ {
-    int num_threads;        // Number of threads to use
-    char *input_directory;  // Input directory containing the images
-    char *output_directory; // Output directory path
-    char *mode;             // Processing mode
+    int num_threads;
+    char *input_directory;
+    char *output_directory;
+    char *mode;
 } command_line_options;
 
 void *process_image(void *input_struct) {
@@ -80,6 +71,19 @@ void *process_image(void *input_struct) {
     return NULL;
 }
 
+// Compare by name
+int compare_by_name(const void *a, const void *b) {
+    return strcmp(*(const char **)a, *(const char **)b);
+}
+
+// Compare by size
+int compare_by_size(const void *a, const void *b) {
+    struct stat stat_a, stat_b;
+    stat(*(const char **)a, &stat_a);
+    stat(*(const char **)b, &stat_b);
+    return (int)(stat_a.st_size - stat_b.st_size);
+}
+
 command_line_options *read_command_line(int argc, char *argv[], char **output_dir) {
     if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
@@ -93,42 +97,9 @@ command_line_options *read_command_line(int argc, char *argv[], char **output_di
     }
 
     options->input_directory = argv[1];
-
-    DIR *input_dir = opendir(options->input_directory);
-    if (!input_dir) {
-        perror("Failed to open input directory");
-        free(options);
-        exit(EXIT_FAILURE);
-    }
-
-    // Count files in the input directory
-    struct dirent *entry;
-    int file_count = 0;
-
-    while ((entry = readdir(input_dir)) != NULL) {
-        if (entry->d_type == DT_REG && 
-            (strstr(entry->d_name, ".jpg") || strstr(entry->d_name, ".jpeg"))) {
-            file_count++;
-        }
-    }
-
-    closedir(input_dir);
-
     options->num_threads = atoi(argv[2]);
-    if (options->num_threads <= 0 || options->num_threads > file_count) {
-        fprintf(stderr, "Invalid number of threads. Must be between 1 and %d (number of files).\n", file_count);
-        free(options);
-        exit(EXIT_FAILURE);
-    }
-
     options->mode = argv[3];
-    if (strcmp(options->mode, "-name") != 0 && strcmp(options->mode, "-size") != 0) {
-        fprintf(stderr, "Invalid mode: Use '-name' or '-size'.\n");
-        free(options);
-        exit(EXIT_FAILURE);
-    }
 
-    // Construct the output directory path
     size_t dir_len = strlen(options->input_directory) + strlen("/old_photo_PAR_A") + 1;
     *output_dir = malloc(dir_len);
     if (!*output_dir) {
@@ -137,13 +108,7 @@ command_line_options *read_command_line(int argc, char *argv[], char **output_di
         exit(EXIT_FAILURE);
     }
     snprintf(*output_dir, dir_len, "%s/old_photo_PAR_A", options->input_directory);
-
-    if (mkdir(*output_dir, 0755) != 0 && errno != EEXIST) {
-        perror("Failed to create output directory");
-        free(*output_dir);
-        free(options);
-        exit(EXIT_FAILURE);
-    }
+    mkdir(*output_dir, 0755);
 
     options->output_directory = *output_dir;
     return options;
@@ -167,8 +132,7 @@ int main(int argc, char *argv[]) {
     int file_count = 0;
 
     while ((entry = readdir(input_dir)) != NULL) {
-        if (entry->d_type == DT_REG && 
-            (strstr(entry->d_name, ".jpg") || strstr(entry->d_name, ".jpeg"))) {
+        if (entry->d_type == DT_REG && (strstr(entry->d_name, ".jpg") || strstr(entry->d_name, ".jpeg"))) {
             file_list = realloc(file_list, (file_count + 1) * sizeof(char *));
             file_list[file_count] = malloc(MAX_FILENAME_LEN);
             snprintf(file_list[file_count], MAX_FILENAME_LEN, "%s/%s", options->input_directory, entry->d_name);
@@ -177,6 +141,15 @@ int main(int argc, char *argv[]) {
     }
 
     closedir(input_dir);
+
+    if (strcmp(options->mode, "-name") == 0) {
+        qsort(file_list, file_count, sizeof(char *), compare_by_name);
+    } else if (strcmp(options->mode, "-size") == 0) {
+        qsort(file_list, file_count, sizeof(char *), compare_by_size);
+    } else {
+        fprintf(stderr, "Invalid mode. Use '-name' or '-size'.\n");
+        return EXIT_FAILURE;
+    }
 
     pthread_t *threads = malloc(options->num_threads * sizeof(pthread_t));
     input *thread_inputs = malloc(options->num_threads * sizeof(input));
@@ -190,7 +163,6 @@ int main(int argc, char *argv[]) {
         thread_inputs[i].start_index = current_index;
         thread_inputs[i].num_files = files_per_thread + (i < remainder ? 1 : 0);
         thread_inputs[i].output_directory = output_dir;
-
         current_index += thread_inputs[i].num_files;
 
         if (pthread_create(&threads[i], NULL, process_image, &thread_inputs[i]) != 0) {
