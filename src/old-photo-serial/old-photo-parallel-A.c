@@ -99,13 +99,17 @@ int main() {
 
     for (int i = 0; i < nn_files; i++) {
         input_array[i].filename = files[i];
-        
-        pthread_create(&thread_array[i], NULL, process_image, &input_array[i]);
+        if (pthread_create(&thread_array[i], NULL, process_image, &input_array[i]) != 0) {
+            fprintf(stderr, "Error creating thread for file %s\n", files[i]);
+        }
+    }
+
+    // Wait for all threads to finish
+    for (int i = 0; i < nn_files; i++) {
         pthread_join(thread_array[i], NULL);
     }
 
-
-	clock_gettime(CLOCK_MONOTONIC, &end_time_par);
+    clock_gettime(CLOCK_MONOTONIC, &end_time_par);
 	clock_gettime(CLOCK_MONOTONIC, &end_time_total);
 
 struct timespec par_time = diff_timespec(&end_time_par, &start_time_par);
