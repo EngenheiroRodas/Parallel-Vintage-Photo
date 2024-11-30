@@ -1,9 +1,13 @@
+#include <gd.h>
+#include "image-lib.h"
 #include "helper_f.h"
 #include <dirent.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h> 
 #include <sys/stat.h>   
+#include <stdlib.h>
+#include <pthread.h>
 
 #define COMMAND_LINE_OPTIONS 3
 
@@ -12,7 +16,7 @@ char **file_list = NULL; // Shared file list accessible by threads
 // Structure to store file information
 typedef struct {
     char *name;
-    off_t size;
+    size_t size;
 } FileInfo;
 
 // Helper function to extract a numeric value from a string
@@ -158,9 +162,9 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
 }
 
 // Function to validate and parse command line arguments
-char *read_command_line(int argc, char *argv[], size_t *file_count) {
-    const char *OUTPUT_DIR = "/old-photo-PAR-A";
-    if (argc < COMMAND_LINE_OPTIONS + 1) {
+char *read_command_line(int argc, char *argv[], size_t *file_count, char **output_txt) {
+    const char *OUTPUT_DIR = "/old_photo_PAR_A";
+    if (argc < 4) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -183,7 +187,8 @@ char *read_command_line(int argc, char *argv[], size_t *file_count) {
         exit(EXIT_FAILURE);
     }
 
-    size_t output_length = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1; // +1 for '\0'
+    // Calculate the size for the output directory string
+    size_t output_length = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1;
     char *output_directory = malloc(output_length);
     if (!output_directory) {
         perror("Failed to allocate memory for output directory");
@@ -191,5 +196,68 @@ char *read_command_line(int argc, char *argv[], size_t *file_count) {
     }
     snprintf(output_directory, output_length, "%s%s", argv[1], OUTPUT_DIR);
 
+    // Calculate the size for the output text file name dynamically
+    // Format: timing_<n>-(name|size).txt
+    const char *sort_option = (strcmp(argv[3], "-name") == 0) ? "name" : "size";
+    size_t output_txt_length = snprintf(NULL, 0, "timing_%d-%s.txt", num_threads, sort_option) + 1;
+    
+    // Allocate memory for the output text filename
+    *output_txt = malloc(output_txt_length);
+    if (!*output_txt) {
+        perror("Failed to allocate memory for output text filename");
+        free(output_directory);
+        exit(EXIT_FAILURE);
+    }
+
+    // Create the output text filename
+    snprintf(*output_txt, output_txt_length, "timing_%d-%s.txt", num_threads, sort_option);
+
     return output_directory;
+}
+
+
+// Thread function to process images
+void *process_image(void *input_struct) {
+    input *data = (input *)input_struct;
+    char full_path[512];
+    char out_file_name[512]; // Adjusted for sufficient length
+
+    gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
+    gdImagePtr in_texture_img = read_png_file("./paper-texture.png");
+
+    if (!in_texture_img) {
+        fprintf(stderr, "Error reading texture image.\n");
+        pthread_exit(NULL);
+    }
+
+    for (int i = data->start_index; i <= data->end_index; i++) {
+        snprintf(full_path, sizeof(full_path), "%s/%s", data->input_directory, file_list[i]);
+        printf("image %s\n", file_list[i]);
+
+        in_img = read_jpeg_file(full_path);
+        if (!in_img) {
+            fprintf(stderr, "Cannot read image: %s\n", full_path);
+            continue;
+        }
+
+        out_contrast_img = contrast_image(in_img);
+        out_smoothed_img = smooth_image(out_contrast_img);
+        out_textured_img = texture_image(out_smoothed_img, in_texture_img);
+        out_sepia_img = sepia_image(out_textured_img);
+
+        snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[i]);
+        if (!write_jpeg_file(out_sepia_img, out_file_name)) {
+            fprintf(stderr, "Failed to write image: %s\n", out_file_name);
+        }
+
+        gdImageDestroy(out_contrast_img);
+        gdImageDestroy(out_smoothed_img);
+        gdImageDestroy(out_textured_img);
+        gdImageDestroy(out_sepia_img);
+        gdImageDestroy(in_img);
+    }
+
+    gdImageDestroy(in_texture_img);
+    
+    return NULL;
 }
