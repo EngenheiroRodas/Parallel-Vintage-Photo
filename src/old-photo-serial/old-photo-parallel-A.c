@@ -232,7 +232,7 @@ void *process_image(void *input_struct) {
 
     for (int i = data->start_index; i <= data->end_index; i++) {
         snprintf(full_path, sizeof(full_path), "%s/%s", data->input_directory, file_list[i]);
-        printf("Processing image: %s\n", full_path);
+        printf("image %s\n", file_list[i]);
 
         in_img = read_jpeg_file(full_path);
         if (!in_img) {
