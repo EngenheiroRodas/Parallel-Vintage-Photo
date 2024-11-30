@@ -1,176 +1,187 @@
-/******************************************************************************
- * Programacao Concorrente
- * LEEC 24/25
- *
- * Projecto - Parte1
- *                           old-photo-parallel-A.c
- * 
- * Compilacao: gcc serial-complexo -o serial-complex -lgd
- *           
- *****************************************************************************/
-
 #include <gd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <stdio.h>
-#include <time.h>
+#include <string.h>
+#include <stdlib.h>
 #include <pthread.h>
+#include <errno.h>
 #include "image-lib.h"
 
-#define OLD_IMAGE_DIR "./Old-image-dir/"
-#define COMMAND_LINE_OPTIONS 1
+#define COMMAND_LINE_OPTIONS 3
+#define MAX_FILENAME_LEN 256
 
 typedef struct input_ {
-    char **filename ;  // string with the name of the file to be processed
-    int num_files;  // number of files to be processed
+    char **file_list;
+    int start_index;
+    int num_files;
+    char *output_directory;
 } input;
 
 typedef struct command_line_options_ {
-    int num_threads;  // number of threads to be used
+    int num_threads;
+    char *input_directory;
     char *output_directory;
     char *mode;
 } command_line_options;
 
 void *process_image(void *input_struct) {
-    input *data = (input *) input_struct;
-    char **files = data->filename;
+    input *data = (input *)input_struct;
+    char **file_list = data->file_list;
+    int start_index = data->start_index;
     int num_files = data->num_files;
+    char *output_directory = data->output_directory;
 
-    /* Input and output images */
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
     gdImagePtr in_texture_img = read_png_file("./paper-texture.png");
 
     if (in_texture_img == NULL) {
-        fprintf(stderr, "Error reading texture image.\n");
+        fprintf(stderr, "Error reading texture image. Ensure './paper-texture.png' exists.\n");
         pthread_exit(NULL);
     }
 
     for (int i = 0; i < num_files; i++) {
-        char out_file_name[100];
+        char out_file_name[MAX_FILENAME_LEN];
+        printf("Processing image: %s\n", file_list[start_index + i]);
 
-        printf("Processing image: %s\n", files[i]);
-        in_img = read_jpeg_file(files[i]);
-
+        in_img = read_jpeg_file(file_list[start_index + i]);
         if (in_img == NULL) {
-            fprintf(stderr, "Impossible to read %s image\n", files[i]);
+            fprintf(stderr, "Cannot read image: %s\n", file_list[start_index + i]);
             continue;
         }
 
-        // Apply transformations
         out_contrast_img = contrast_image(in_img);
         out_smoothed_img = smooth_image(out_contrast_img);
         out_textured_img = texture_image(out_smoothed_img, in_texture_img);
         out_sepia_img = sepia_image(out_textured_img);
 
-        // Generate output file path
-        sprintf(out_file_name, "%s%s", OLD_IMAGE_DIR, files[i]);
+        snprintf(out_file_name, MAX_FILENAME_LEN, "%s/%s", output_directory, strrchr(file_list[start_index + i], '/') ? strrchr(file_list[start_index + i], '/') + 1 : file_list[start_index + i]);
         if (write_jpeg_file(out_sepia_img, out_file_name) == 0) {
-            fprintf(stderr, "Impossible to write %s image\n", out_file_name);
+            fprintf(stderr, "Cannot write image: %s\n", out_file_name);
         }
 
-        // Free resources
         gdImageDestroy(out_smoothed_img);
         gdImageDestroy(out_sepia_img);
         gdImageDestroy(out_contrast_img);
         gdImageDestroy(in_img);
     }
 
-    gdImageDestroy(in_texture_img); // Destroy texture image after use
+    gdImageDestroy(in_texture_img);
     return NULL;
 }
 
+// Compare by name
+int compare_by_name(const void *a, const void *b) {
+    return strcmp(*(const char **)a, *(const char **)b);
+}
 
-command_line_options *read_command_line(int argc, char *argv[]) {
+// Compare by size
+int compare_by_size(const void *a, const void *b) {
+    struct stat stat_a, stat_b;
+    stat(*(const char **)a, &stat_a);
+    stat(*(const char **)b, &stat_b);
+    return (int)(stat_a.st_size - stat_b.st_size);
+}
+
+command_line_options *read_command_line(int argc, char *argv[], char **output_dir) {
+    if (argc < COMMAND_LINE_OPTIONS + 1) {
+        fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
     command_line_options *options = malloc(sizeof(command_line_options));
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s [num_threads]\n", argv[0]);
-        exit(1);
+    if (!options) {
+        perror("Failed to allocate memory");
+        exit(EXIT_FAILURE);
     }
 
-    options->num_threads = atoi(argv[1]);
+    options->input_directory = argv[1];
+    options->num_threads = atoi(argv[2]);
+    options->mode = argv[3];
 
-    if (options->num_threads <= 0 || options->num_threads > 10) {
-        fprintf(stderr, "Invalid number of threads. Must be between 1 and %d\n", 10);
-        exit(1);
+    size_t dir_len = strlen(options->input_directory) + strlen("/old_photo_PAR_A") + 1;
+    *output_dir = malloc(dir_len);
+    if (!*output_dir) {
+        perror("Failed to allocate memory for output directory");
+        free(options);
+        exit(EXIT_FAILURE);
     }
+    snprintf(*output_dir, dir_len, "%s/old_photo_PAR_A", options->input_directory);
+    mkdir(*output_dir, 0755);
 
+    options->output_directory = *output_dir;
     return options;
 }
 
-
 int main(int argc, char *argv[]) {
-    struct timespec start_time_total, end_time_total;
-    struct timespec start_time_seq, end_time_seq;
-    struct timespec start_time_par, end_time_par;
+    char *output_dir = NULL;
+    command_line_options *options = read_command_line(argc, argv, &output_dir);
 
-    clock_gettime(CLOCK_MONOTONIC, &start_time_total);
-    clock_gettime(CLOCK_MONOTONIC, &start_time_seq);
-
-    // Parse command line arguments
-    command_line_options *options = read_command_line(argc, argv);
-
-    int files_per_thread, remainder, num_files_for_thread, current_file = 0;
-
-    // List of files to be processed
-    char *files[] = {"img-IST-0.jpeg", "img-IST-1.jpeg", "img-IST-2.jpeg", 
-                     "img-IST-3.jpeg", "img-IST-4.jpeg", "img-IST-5.jpeg",
-                     "img-IST-6.jpeg", "img-IST-7.jpeg", "img-IST-8.jpeg", 
-                     "img-IST-9.jpeg"};
-    int nn_files = 10;
-
-    files_per_thread = nn_files / options->num_threads;
-    remainder = nn_files % options->num_threads;
-
-    pthread_t *thread_array = malloc(options->num_threads * sizeof(pthread_t));
-    input *input_array = malloc(options->num_threads * sizeof(input));
-
-    // Create output directory
-    if (create_directory(OLD_IMAGE_DIR) == 0) {
-        fprintf(stderr, "Impossible to create %s directory\n", OLD_IMAGE_DIR);
-        exit(-1);
+    DIR *input_dir = opendir(options->input_directory);
+    if (!input_dir) {
+        perror("Failed to open input directory");
+        free(output_dir);
+        free(options);
+        return EXIT_FAILURE;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &end_time_seq);
-    clock_gettime(CLOCK_MONOTONIC, &start_time_par);
+    // Create a list of files to process
+    struct dirent *entry;
+    char **file_list = NULL;
+    int file_count = 0;
 
-    // Distribute files among threads
-    for (int i = 0; i < options->num_threads; i++) {
-        num_files_for_thread = files_per_thread + (i < remainder ? 1 : 0);
-        input_array[i].filename = malloc(num_files_for_thread * sizeof(char *));
-        input_array[i].num_files = num_files_for_thread;
-        for (int j = 0; j < num_files_for_thread; j++) {
-            input_array[i].filename[j] = files[current_file++];
+    while ((entry = readdir(input_dir)) != NULL) {
+        if (entry->d_type == DT_REG && (strstr(entry->d_name, ".jpg") || strstr(entry->d_name, ".jpeg"))) {
+            file_list = realloc(file_list, (file_count + 1) * sizeof(char *));
+            file_list[file_count] = malloc(MAX_FILENAME_LEN);
+            snprintf(file_list[file_count], MAX_FILENAME_LEN, "%s/%s", options->input_directory, entry->d_name);
+            file_count++;
         }
     }
 
-    // Create threads
+    closedir(input_dir);
+
+    if (strcmp(options->mode, "-name") == 0) {
+        qsort(file_list, file_count, sizeof(char *), compare_by_name);
+    } else if (strcmp(options->mode, "-size") == 0) {
+        qsort(file_list, file_count, sizeof(char *), compare_by_size);
+    } else {
+        fprintf(stderr, "Invalid mode. Use '-name' or '-size'.\n");
+        return EXIT_FAILURE;
+    }
+
+    pthread_t *threads = malloc(options->num_threads * sizeof(pthread_t));
+    input *thread_inputs = malloc(options->num_threads * sizeof(input));
+
+    int files_per_thread = file_count / options->num_threads;
+    int remainder = file_count % options->num_threads;
+    int current_index = 0;
+
     for (int i = 0; i < options->num_threads; i++) {
-        if (pthread_create(&thread_array[i], NULL, process_image, &input_array[i]) != 0) {
-            fprintf(stderr, "Error creating thread %d\n", i);
+        thread_inputs[i].file_list = file_list;
+        thread_inputs[i].start_index = current_index;
+        thread_inputs[i].num_files = files_per_thread + (i < remainder ? 1 : 0);
+        thread_inputs[i].output_directory = output_dir;
+        current_index += thread_inputs[i].num_files;
+
+        if (pthread_create(&threads[i], NULL, process_image, &thread_inputs[i]) != 0) {
+            fprintf(stderr, "Failed to create thread %d\n", i);
+            exit(EXIT_FAILURE);
         }
     }
 
     for (int i = 0; i < options->num_threads; i++) {
-        pthread_join(thread_array[i], NULL);
+        pthread_join(threads[i], NULL);
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &end_time_par);
-    clock_gettime(CLOCK_MONOTONIC, &end_time_total);
-
-struct timespec par_time = diff_timespec(&end_time_par, &start_time_par);
-struct timespec seq_time = diff_timespec(&end_time_seq, &start_time_seq);
-struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
-    printf("\tseq \t %10jd.%09ld\n", seq_time.tv_sec, seq_time.tv_nsec);
-    printf("\tpar \t %10jd.%09ld\n", par_time.tv_sec, par_time.tv_nsec);
-    printf("total \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
-
-    // Cleanup memory
-    for (int i = 0; i < options->num_threads; i++) {
-        free(input_array[i].filename);
+    for (int i = 0; i < file_count; i++) {
+        free(file_list[i]);
     }
-    free(input_array);
-    free(thread_array);
+    free(file_list);
+    free(thread_inputs);
+    free(threads);
+    free(output_dir);
     free(options);
 
     return 0;
