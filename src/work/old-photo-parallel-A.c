@@ -42,9 +42,6 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
     }
-
-    printf("output_directory: %s\n", output_directory); // Debug
-
     int num_threads = atoi(argv[2]);
     pthread_t threads[num_threads];
     input thread_inputs[num_threads];

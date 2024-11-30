@@ -8,6 +8,7 @@
 #include <sys/stat.h>   
 #include <stdlib.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #define COMMAND_LINE_OPTIONS 3
 
@@ -164,7 +165,7 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
 // Function to validate and parse command line arguments
 char *read_command_line(int argc, char *argv[], size_t *file_count, char **output_txt) {
     const char *OUTPUT_DIR = "/old_photo_PAR_A";
-    if (argc < 4) {
+    if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -196,6 +197,8 @@ char *read_command_line(int argc, char *argv[], size_t *file_count, char **outpu
     }
     snprintf(output_directory, output_length, "%s%s", argv[1], OUTPUT_DIR);
 
+
+
     // Calculate the size for the output text file name dynamically
     // Format: timing_<n>-(name|size).txt
     const char *sort_option = (strcmp(argv[3], "-name") == 0) ? "name" : "size";
@@ -209,8 +212,24 @@ char *read_command_line(int argc, char *argv[], size_t *file_count, char **outpu
         exit(EXIT_FAILURE);
     }
 
+
     // Create the output text filename
     snprintf(*output_txt, output_txt_length, "timing_%d-%s.txt", num_threads, sort_option);
+
+    // Append the output text filename to the end of argv[1] (input directory)
+    size_t final_length = strlen(argv[1]) + strlen(*output_txt) + 2;  // +1 for '/' and +1 for '\0'
+    char *final_path = malloc(final_length);
+    if (!final_path) {
+        perror("Failed to allocate memory for final path");
+        free(output_directory);
+        free(*output_txt);
+        exit(EXIT_FAILURE);
+    }
+
+    // Concatenate argv[1] (input directory) and output_txt (filename) to create final path
+    snprintf(final_path, final_length, "%s/%s", argv[1], *output_txt);
+ 
+    *output_txt = strdup(final_path);  // Update output_txt to point to the final path
 
     return output_directory;
 }
@@ -231,6 +250,9 @@ void *process_image(void *input_struct) {
     }
 
     for (int i = data->start_index; i <= data->end_index; i++) {
+        snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[i]);
+        if (access(out_file_name, F_OK) != -1)  continue;
+
         snprintf(full_path, sizeof(full_path), "%s/%s", data->input_directory, file_list[i]);
         printf("image %s\n", file_list[i]);
 
