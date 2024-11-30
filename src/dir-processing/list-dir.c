@@ -2,18 +2,34 @@
 #include <stdio.h> 
 #include <sys/stat.h>
 
-int main(void) {
+int main(int argc, char *argv[])
+{
+  if (argc != 2)
+  {
+    fprintf(stderr, "Usage: %s <directory>\n", argv[0]);
+    return 1;
+  }
+
   DIR *d;
   struct dirent *f;
-  d = opendir(".");
-  if (d) {
-    while ((f = readdir(d)) != NULL) {
-        printf("%s ", f->d_name);
-        struct stat st;
-        stat(f->d_name, &st);
-        printf("%ld\n", st.st_size);
+  d = opendir(argv[1]);
+  if (d)
+  {
+    while ((f = readdir(d)) != NULL)
+    {
+      printf("%s ", f->d_name);
+      struct stat st;
+      char filepath[1024];
+      snprintf(filepath, sizeof(filepath), "%s/%s", argv[1], f->d_name);
+      stat(filepath, &st);
+      printf("%ld\n", st.st_size);
     }
     closedir(d);
   }
-  return(0);
+  else
+  {
+    perror("opendir");
+    return 1;
+  }
+  return 0;
 }
