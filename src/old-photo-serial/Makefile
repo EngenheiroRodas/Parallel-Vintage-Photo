@@ -1,10 +1,11 @@
-all: old-photo-serial
+all: par
 
-old-photo-serial: old-photo-serial.c image-lib.c image-lib.h
-	gcc old-photo-parallel-A.c image-lib.c image-lib.h -g -o old-photo-serial -lgd
+
+par: old-photo-parallel-A.c image-lib.c image-lib.h
+	gcc old-photo-parallel-A.c image-lib.c image-lib.h -g -o par -lgd
 
 clean:
-	rm old-photo-serial
+	rm par
 
 clean_all: clean
 	rm -fr ./*-dir
