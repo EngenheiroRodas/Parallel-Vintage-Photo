@@ -5,7 +5,6 @@
  * Projecto - Parte1
  *                           old-photo-parallel-A.c
  * 
- *           
  *****************************************************************************/
 
 #include <gd.h>
@@ -24,9 +23,9 @@
 #define COMMAND_LINE_OPTIONS 3
 
 typedef struct input_ {
-    int start_index;    // Number of files to be processed
-    int end_index;      // Number of files to be processed
-    char *output_directory; // Output directory path
+    int start_index;         // Starting index of files for the thread
+    int end_index;           // Ending index of files for the thread
+    char *output_directory;  // Output directory path
 } input;
 
 // Structure to store file information
@@ -35,8 +34,7 @@ typedef struct {
     off_t size;
 } FileInfo;
 
-char **file_list;
-
+char **file_list = NULL; // Shared file list accessible by threads
 
 // Helper function to extract a numeric value from a string
 int extract_number(const char *str) {
@@ -66,9 +64,7 @@ int compare_by_name_natural(const void *a, const void *b) {
 int compare_by_size(const void *a, const void *b) {
     FileInfo *file1 = (FileInfo *)a;
     FileInfo *file2 = (FileInfo *)b;
-    if (file1->size < file2->size) return -1;
-    if (file1->size > file2->size) return 1;
-    return 0;
+    return (file1->size < file2->size) ? -1 : (file1->size > file2->size);
 }
 
 // Function to collect, sort, and display .jpg files
@@ -163,6 +159,7 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
         exit(EXIT_FAILURE);
     }
 
+    // Allocate and populate the shared file list
     file_list = malloc((*file_count) * sizeof(char *));
     if (!file_list) {
         perror("Failed to allocate memory for file list");
@@ -173,67 +170,68 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
         exit(EXIT_FAILURE);
     }
     for (size_t i = 0; i < *file_count; i++) {
-        file_list[i] = strdup(files[i].name);
+        file_list[i] = files[i].name; // Transfer ownership
     }
 
-
-    for (size_t i = 0; i < *file_count; i++) {
-        free(file_list[i]);
-    }
-    // Free file array
+    // Free the FileInfo array but not the names (now owned by file_list)
     free(files);
 }
 
-
+// Function to validate and parse command line arguments
 char *read_command_line(int argc, char *argv[], size_t *file_count) {
     const char *OUTPUT_DIR = "/old-photo-PAR-A";
-    char *output_directory;
     if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
     if (strcmp(argv[3], "-name") != 0 && strcmp(argv[3], "-size") != 0) {
-        fprintf(stderr, "Invalid mode: Use 'name' or 'size'.\n");
+        fprintf(stderr, "Invalid mode: Use '-name' or '-size'.\n");
         exit(EXIT_FAILURE);
     }
 
     process_jpg_files(argv[1], argv[3], file_count);
 
-    if (atoi(argv[2]) <= 0 || atoi(argv[2])> *file_count) {
-        fprintf(stderr, "Invalid number of threads. Must be between 1 and %d (number of files).\n", *file_count);
+    if (*file_count == 0) {
+        fprintf(stderr, "No .jpg files found in the specified directory.\n");
         exit(EXIT_FAILURE);
     }
 
-    char *output_path = malloc(strlen(argv[1]) + strlen(OUTPUT_DIR) + 2);
-    if (!output_path) {
-        perror("Failed to allocate memory");
+    int num_threads = atoi(argv[2]);
+    if (num_threads <= 0 || num_threads > *file_count) {
+        fprintf(stderr, "Invalid number of threads. Must be between 1 and %zu (number of files).\n", *file_count);
         exit(EXIT_FAILURE);
     }
-    snprintf(output_path, strlen(argv[1]) + strlen(OUTPUT_DIR) + 2, "%s%s", argv[1], OUTPUT_DIR);
-    output_directory = strdup(output_path);
-    free(output_path);
+
+    size_t output_length = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1; // +1 for '\0'
+    char *output_directory = malloc(output_length);
+    if (!output_directory) {
+        perror("Failed to allocate memory for output directory");
+        exit(EXIT_FAILURE);
+    }
+    snprintf(output_directory, output_length, "%s%s", argv[1], OUTPUT_DIR);
 
     return output_directory;
 }
 
+// Thread function to process images
 void *process_image(void *input_struct) {
-    input *data = (input *)input_struct;  
-    char *out_file_name = malloc(strlen(data->output_directory) + 100);  
+    input *data = (input *)input_struct;
+    char out_file_name[512]; // Adjusted for sufficient length
 
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
     gdImagePtr in_texture_img = read_png_file("./paper-texture.png");
 
-    if (in_texture_img == NULL) {
+    if (!in_texture_img) {
         fprintf(stderr, "Error reading texture image.\n");
         pthread_exit(NULL);
     }
 
-    for (int i = data->start_index; i < data->end_index; i++) {
+    for (int i = data->start_index; i <= data->end_index; i++) {
         printf("Processing image: %s\n", file_list[i]);
 
         in_img = read_jpeg_file(file_list[i]);
-        if (in_img == NULL) {
+        if (!in_img) {
             fprintf(stderr, "Cannot read image: %s\n", file_list[i]);
             continue;
         }
@@ -243,10 +241,10 @@ void *process_image(void *input_struct) {
         out_textured_img = texture_image(out_smoothed_img, in_texture_img);
         out_sepia_img = sepia_image(out_textured_img);
 
-		sprintf(out_file_name, "%s%s", data->output_directory, file_list[i]);
-		if(write_jpeg_file(out_sepia_img, out_file_name) == 0){
-			fprintf(stderr, "Impossible to write %s image\n", out_file_name);
-		}
+        snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[i]);
+        if (!write_jpeg_file(out_sepia_img, out_file_name)) {
+            fprintf(stderr, "Failed to write image: %s\n", out_file_name);
+        }
 
         gdImageDestroy(out_smoothed_img);
         gdImageDestroy(out_sepia_img);
@@ -258,20 +256,32 @@ void *process_image(void *input_struct) {
     return NULL;
 }
 
-
-
 int main(int argc, char *argv[]) {
     size_t file_count = 0;
-    char *output_directory = read_command_line(argc, argv, &file_count);
-    int num_threads = atoi(argv[2]);
 
-    pthread_t *threads = malloc(num_threads * sizeof(pthread_t));
-    input *thread_inputs = malloc(num_threads * sizeof(input));
+    // Parse and validate command line arguments
+    char *output_directory = read_command_line(argc, argv, &file_count);
+
+    // Create the output directory if it doesn't exist
+    struct stat st = {0};
+    if (stat(output_directory, &st) == -1) {
+        if (mkdir(output_directory, 0777) == -1) {
+            perror("Failed to create output directory");
+            free(output_directory);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Allocate thread structures
+    int num_threads = atoi(argv[2]);
+    pthread_t threads[num_threads];
+    input thread_inputs[num_threads];
 
     int files_per_thread = file_count / num_threads;
     int remainder = file_count % num_threads;
     int current_file = 0;
 
+    // Distribute files among threads
     for (int i = 0; i < num_threads; i++) {
         thread_inputs[i].start_index = current_file;
         thread_inputs[i].output_directory = output_directory;
@@ -283,21 +293,31 @@ int main(int argc, char *argv[]) {
         thread_inputs[i].end_index = current_file - 1;
     }
 
+    // Create threads
     for (int i = 0; i < num_threads; i++) {
-        pthread_create(&threads[i], NULL, process_image, &thread_inputs[i]);
+        if (pthread_create(&threads[i], NULL, process_image, &thread_inputs[i]) != 0) {
+            perror("Failed to create thread");
+            free(output_directory);
+            exit(EXIT_FAILURE);
+        }
     }
 
+    // Join threads
     for (int i = 0; i < num_threads; i++) {
-        pthread_join(threads[i], NULL);
+        if (pthread_join(threads[i], NULL) != 0) {
+            perror("Failed to join thread");
+            free(output_directory);
+            exit(EXIT_FAILURE);
+        }
     }
 
-
-    for (int i = 0; i < file_count; i++) {
+    // Cleanup
+    free(output_directory);
+    for (size_t i = 0; i < file_count; i++) {
         free(file_list[i]);
     }
     free(file_list);
-    free(thread_inputs);
-    free(threads);
 
+    printf("All images processed successfully.\n");
     return 0;
 }
