@@ -163,7 +163,7 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
 }
 
 // Function to validate and parse command line arguments
-char *read_command_line(int argc, char *argv[], size_t *file_count, char **output_txt) {
+void read_command_line(int argc, char *argv[], size_t *file_count) {
     const char *OUTPUT_DIR = "/old_photo_PAR_A";
     if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
@@ -188,51 +188,49 @@ char *read_command_line(int argc, char *argv[], size_t *file_count, char **outpu
         exit(EXIT_FAILURE);
     }
 
-    // Calculate the size for the output directory string
-    size_t output_length = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1;
-    char *output_directory = malloc(output_length);
-    if (!output_directory) {
-        perror("Failed to allocate memory for output directory");
-        exit(EXIT_FAILURE);
-    }
-    snprintf(output_directory, output_length, "%s%s", argv[1], OUTPUT_DIR);
-
-
-
-    // Calculate the size for the output text file name dynamically
-    // Format: timing_<n>-(name|size).txt
-    const char *sort_option = (strcmp(argv[3], "-name") == 0) ? "name" : "size";
-    size_t output_txt_length = snprintf(NULL, 0, "timing_%d-%s.txt", num_threads, sort_option) + 1;
-    
-    // Allocate memory for the output text filename
-    *output_txt = malloc(output_txt_length);
-    if (!*output_txt) {
-        perror("Failed to allocate memory for output text filename");
-        free(output_directory);
-        exit(EXIT_FAILURE);
-    }
-
-
-    // Create the output text filename
-    snprintf(*output_txt, output_txt_length, "timing_%d-%s.txt", num_threads, sort_option);
-
-    // Append the output text filename to the end of argv[1] (input directory)
-    size_t final_length = strlen(argv[1]) + strlen(*output_txt) + 2;  // +1 for '/' and +1 for '\0'
-    char *final_path = malloc(final_length);
-    if (!final_path) {
-        perror("Failed to allocate memory for final path");
-        free(output_directory);
-        free(*output_txt);
-        exit(EXIT_FAILURE);
-    }
-
-    // Concatenate argv[1] (input directory) and output_txt (filename) to create final path
-    snprintf(final_path, final_length, "%s/%s", argv[1], *output_txt);
- 
-    *output_txt = strdup(final_path);  // Update output_txt to point to the final path
-
-    return output_directory;
+    return;
 }
+
+void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory) {
+    const char *OUTPUT_DIR = "/old_photo_PAR_A";
+    const char *OUTPUT_TXT_PREFIX = "timing_";
+
+    // Validate the suffix argument
+    char *suffix = NULL;
+    if (strcmp(argv[3], "-size") == 0) {
+        suffix = "-size.txt";
+    } else if (strcmp(argv[3], "-name") == 0) {
+        suffix = "-name.txt";
+    } else {
+        fprintf(stderr, "Invalid third argument. Must be '-size' or '-name'.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    // Create output directory path
+    size_t output_dir_len = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1;
+    *output_directory = malloc(output_dir_len);
+    if (*output_directory == NULL) {
+        perror("Failed to allocate memory for output directory path");
+        exit(EXIT_FAILURE);
+    }
+    snprintf(*output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
+
+    // Create output file path (inside the input directory)
+    size_t output_txt_len = strlen(argv[1]) + strlen("/") + strlen(OUTPUT_TXT_PREFIX) +
+                            snprintf(NULL, 0, "%d", atoi(argv[2])) + strlen(suffix) + 1;
+    *output_txt = malloc(output_txt_len);
+    if (*output_txt == NULL) {
+        perror("Failed to allocate memory for output txt path");
+        free(*output_directory);
+        exit(EXIT_FAILURE);
+    }
+    snprintf(*output_txt, output_txt_len, "%s/%s%d%s", argv[1], OUTPUT_TXT_PREFIX, atoi(argv[2]), suffix);
+
+    // Debug prints
+    printf("Output directory: %s\n", *output_directory);
+    printf("Output file: %s\n", *output_txt);
+}
+
 
 
 // Thread function to process images

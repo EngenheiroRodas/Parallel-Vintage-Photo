@@ -28,11 +28,13 @@ int main(int argc, char *argv[]) {
 	clock_gettime(CLOCK_MONOTONIC, &start_time_total);
 	clock_gettime(CLOCK_MONOTONIC, &start_time_seq);
 
-    FILE *output_file;
-    char *output_txt = NULL;
+    FILE *output_file_txt;
+    char *output_txt, *output_directory;
+    edit_paths(argc, argv, &output_txt, &output_directory);
+
     size_t file_count = 0;
 
-    char *output_directory = read_command_line(argc, argv, &file_count, &output_txt);
+    read_command_line(argc, argv, &file_count);
     struct stat st = {0};
 
     if (stat(output_directory, &st) == -1) {
@@ -98,18 +100,18 @@ struct timespec par_time = diff_timespec(&end_time_par, &start_time_par);
 struct timespec seq_time = diff_timespec(&end_time_seq, &start_time_seq);
 struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
 
-    output_file = fopen(output_txt, "w");
-    if (output_file == NULL) {
+    output_file_txt = fopen(output_txt, "w");
+    if (output_file_txt == NULL) {
         perror("Failed to open output file");
         free(output_txt);
         exit(EXIT_FAILURE);
     }
 
-    fprintf(output_file, "\n\n\n\tseq \t %10jd.%09ld\n", seq_time.tv_sec, seq_time.tv_nsec);
-    fprintf(output_file, "\tpar \t %10jd.%09ld\n", par_time.tv_sec, par_time.tv_nsec);
-    fprintf(output_file, "total \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
+    fprintf(output_file_txt, "\n\n\n\tseq \t %10jd.%09ld\n", seq_time.tv_sec, seq_time.tv_nsec);
+    fprintf(output_file_txt, "\tpar \t %10jd.%09ld\n", par_time.tv_sec, par_time.tv_nsec);
+    fprintf(output_file_txt, "total \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
 
-    fclose(output_file);
+    fclose(output_file_txt);
 
     return 0;
 }
