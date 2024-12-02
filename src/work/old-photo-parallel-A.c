@@ -112,6 +112,7 @@ struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
     fprintf(output_file_txt, "total \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
 
     fclose(output_file_txt);
+    free(output_txt);
 
     return 0;
 }

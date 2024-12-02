@@ -160,6 +160,8 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
 
     // Free the FileInfo array but not the names (now owned by file_list)
     free(files);
+
+    return;
 }
 
 // Function to validate and parse command line arguments
@@ -226,9 +228,7 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
     }
     snprintf(*output_txt, output_txt_len, "%s/%s%d%s", argv[1], OUTPUT_TXT_PREFIX, atoi(argv[2]), suffix);
 
-    // Debug prints
-    printf("Output directory: %s\n", *output_directory);
-    printf("Output file: %s\n", *output_txt);
+    return;
 }
 
 
