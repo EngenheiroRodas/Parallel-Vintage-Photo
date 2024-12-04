@@ -30,11 +30,13 @@ int main(int argc, char *argv[]) {
 
     FILE *output_file_txt;
     char *output_txt, *output_directory;
-    edit_paths(argc, argv, &output_txt, &output_directory);
-
+    int num_threads;
     size_t file_count = 0;
 
-    read_command_line(argc, argv, &file_count);
+    edit_paths(argc, argv, &output_txt, &output_directory);    
+
+    num_threads = read_command_line(argc, argv, &file_count);
+
     struct stat st = {0};
 
     if (stat(output_directory, &st) == -1) {
@@ -44,7 +46,6 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
     }
-    int num_threads = atoi(argv[2]);
     pthread_t threads[num_threads];
     input thread_inputs[num_threads];
 

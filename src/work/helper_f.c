@@ -165,7 +165,7 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
 }
 
 // Function to validate and parse command line arguments
-void read_command_line(int argc, char *argv[], size_t *file_count) {
+int read_command_line(int argc, char *argv[], size_t *file_count) {
     const char *OUTPUT_DIR = "/old_photo_PAR_A";
     if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
@@ -185,12 +185,16 @@ void read_command_line(int argc, char *argv[], size_t *file_count) {
     }
 
     int num_threads = atoi(argv[2]);
-    if (num_threads <= 0 || num_threads > *file_count) {
-        fprintf(stderr, "Invalid number of threads. Must be between 1 and %zu (number of files).\n", *file_count);
+    if (num_threads <= 0) {
+        fprintf(stderr, "Invalid number of threads. The number of threads to create must be a positive number.\n");
         exit(EXIT_FAILURE);
     }
+    if (num_threads > *file_count) num_threads = *file_count;
 
-    return;
+    printf("Number of threads: %d\n", num_threads);
+    printf("Number of files: %zu\n", *file_count);
+
+    return num_threads;
 }
 
 void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory) {

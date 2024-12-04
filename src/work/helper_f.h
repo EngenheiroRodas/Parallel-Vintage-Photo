@@ -12,7 +12,7 @@ typedef struct {
 
 extern char **file_list; // Shared file list accessible by threads
 
-void read_command_line(int argc, char *argv[], size_t *file_count);
+int read_command_line(int argc, char *argv[], size_t *file_count);
 
 void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory);
 
