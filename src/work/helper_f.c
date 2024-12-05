@@ -191,9 +191,6 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
     }
     if (num_threads > *file_count) num_threads = *file_count;
 
-    printf("Number of threads: %d\n", num_threads);
-    printf("Number of files: %zu\n", *file_count);
-
     return num_threads;
 }
 
@@ -240,16 +237,11 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
 // Thread function to process images
 void *process_image(void *input_struct) {
     input *data = (input *)input_struct;
+    clock_gettime(CLOCK_MONOTONIC, &data->start_thread);
     char full_path[512];
     char out_file_name[512]; // Adjusted for sufficient length
 
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
-    gdImagePtr in_texture_img = read_png_file("./paper-texture.png");
-
-    if (!in_texture_img) {
-        fprintf(stderr, "Error reading texture image.\n");
-        pthread_exit(NULL);
-    }
 
     for (int i = data->start_index; i <= data->end_index; i++) {
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[i]);
@@ -266,7 +258,7 @@ void *process_image(void *input_struct) {
 
         out_contrast_img = contrast_image(in_img);
         out_smoothed_img = smooth_image(out_contrast_img);
-        out_textured_img = texture_image(out_smoothed_img, in_texture_img);
+        out_textured_img = texture_image(out_smoothed_img, data->in_texture_img);
         out_sepia_img = sepia_image(out_textured_img);
 
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[i]);
@@ -281,7 +273,9 @@ void *process_image(void *input_struct) {
         gdImageDestroy(in_img);
     }
 
-    gdImageDestroy(in_texture_img);
+
+
+    clock_gettime(CLOCK_MONOTONIC, &data->end_thread);
     
     return NULL;
 }

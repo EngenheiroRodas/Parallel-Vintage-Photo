@@ -33,6 +33,12 @@ int main(int argc, char *argv[]) {
     int num_threads;
     size_t file_count = 0;
 
+    gdImagePtr texture_img = read_png_file("./paper-texture.png");
+    if (!texture_img) {
+        fprintf(stderr, "Error reading texture image.\n");
+        pthread_exit(NULL);
+    }
+
     edit_paths(argc, argv, &output_txt, &output_directory);    
 
     num_threads = read_command_line(argc, argv, &file_count);
@@ -63,10 +69,10 @@ int main(int argc, char *argv[]) {
             remainder--;
         }
         thread_inputs[i].end_index = current_file - 1;
+        thread_inputs[i].in_texture_img = texture_img;
     }
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_seq);
-	clock_gettime(CLOCK_MONOTONIC, &start_time_par);
 
     for (int i = 0; i < num_threads; i++) {
         if (pthread_create(&threads[i], NULL, process_image, &thread_inputs[i]) != 0) {
@@ -84,22 +90,25 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &end_time_par);
-
     free(output_directory);
     for (size_t i = 0; i < file_count; i++) {
         free(file_list[i]);
     }
     free(file_list);
 
+    gdImageDestroy(texture_img);
+
     printf("All images processed successfully.\n");
     
 	clock_gettime(CLOCK_MONOTONIC, &end_time_total);
 
-
-struct timespec par_time = diff_timespec(&end_time_par, &start_time_par);
+struct timespec thread_time[num_threads];
 struct timespec seq_time = diff_timespec(&end_time_seq, &start_time_seq);
 struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
+
+    for (int i = 0; i < num_threads; i++) {
+        thread_time[i] = diff_timespec(&thread_inputs[i].end_thread, &thread_inputs[i].start_thread);
+    }
 
     output_file_txt = fopen(output_txt, "w");
     if (output_file_txt == NULL) {
@@ -108,8 +117,10 @@ struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
         exit(EXIT_FAILURE);
     }
 
-    fprintf(output_file_txt, "\n\n\n\tseq \t %10jd.%09ld\n", seq_time.tv_sec, seq_time.tv_nsec);
-    fprintf(output_file_txt, "\tpar \t %10jd.%09ld\n", par_time.tv_sec, par_time.tv_nsec);
+    fprintf(output_file_txt, "\n\nseq \t %10jd.%09ld\n", seq_time.tv_sec, seq_time.tv_nsec);
+    for (int i = 0; i < num_threads; i++) {
+        fprintf(output_file_txt, "\tthread %d \t %10jd.%09ld\n", i, thread_time[i].tv_sec, thread_time[i].tv_nsec);
+    }
     fprintf(output_file_txt, "total \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
 
     fclose(output_file_txt);

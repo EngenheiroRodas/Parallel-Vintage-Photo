@@ -8,6 +8,9 @@ typedef struct {
     int end_index;           // Ending index of files for the thread
     char *output_directory;  // Output directory path
     char *input_directory;   // Input directory path
+    struct timespec start_thread, end_thread;  // Start time of the thread
+    gdImagePtr in_texture_img;
+
 } input;
 
 extern char **file_list; // Shared file list accessible by threads
