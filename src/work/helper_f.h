@@ -11,7 +11,6 @@ typedef struct {
     char *input_directory;   // Input directory path
     struct timespec start_thread, end_thread;  // Start time of the thread
     gdImagePtr in_texture_img;
-
 } input;
 
 extern char **file_list; // Shared file list accessible by threads

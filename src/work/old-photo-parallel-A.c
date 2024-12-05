@@ -6,7 +6,6 @@
  *                           old-photo-parallel-A.c
  * 
  *****************************************************************************/
-
 #include <gd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -21,11 +20,10 @@
 
 int main(int argc, char *argv[]) {
     struct timespec start_time_total, end_time_total;
-    struct timespec start_time_seq, end_time_seq;
-    struct timespec start_time_par, end_time_par;
+    struct timespec start_time_serial, end_time_serial;
 
 	clock_gettime(CLOCK_MONOTONIC, &start_time_total);
-	clock_gettime(CLOCK_MONOTONIC, &start_time_seq);
+	clock_gettime(CLOCK_MONOTONIC, &start_time_serial);
 
     FILE *output_file_txt;
     char *output_txt, *output_directory;
@@ -38,19 +36,12 @@ int main(int argc, char *argv[]) {
         pthread_exit(NULL);
     }
 
-    edit_paths(argc, argv, &output_txt, &output_directory);    
+    edit_paths(argc, argv, &output_txt, &output_directory);
 
     num_threads = read_command_line(argc, argv, &file_count);
 
-    struct stat st = {0};
 
-    if (stat(output_directory, &st) == -1) {
-        if (mkdir(output_directory, 0777) == -1) {
-            perror("Failed to create output directory");
-            free(output_directory);
-            exit(EXIT_FAILURE);
-        }
-    }
+    // Prep of thread argument parsing
     pthread_t threads[num_threads];
     input thread_inputs[num_threads];
 
@@ -71,8 +62,10 @@ int main(int argc, char *argv[]) {
         thread_inputs[i].in_texture_img = texture_img;
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &end_time_seq);
+    clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
 
+
+    // Thread launch
     for (int i = 0; i < num_threads; i++) {
         if (pthread_create(&threads[i], NULL, process_image, &thread_inputs[i]) != 0) {
             perror("Failed to create thread");
@@ -88,6 +81,7 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
     }
+    // Thread return and cleanup
 
     free(output_directory);
     for (size_t i = 0; i < file_count; i++) {
@@ -102,9 +96,10 @@ int main(int argc, char *argv[]) {
 	clock_gettime(CLOCK_MONOTONIC, &end_time_total);
 
 struct timespec thread_time[num_threads];
-struct timespec seq_time = diff_timespec(&end_time_seq, &start_time_seq);
+struct timespec serial_time = diff_timespec(&end_time_serial, &start_time_serial);
 struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
 
+    // Printing of times to timing_<n>-<MODE>.txt
     for (int i = 0; i < num_threads; i++) {
         thread_time[i] = diff_timespec(&thread_inputs[i].end_thread, &thread_inputs[i].start_thread);
     }
@@ -116,11 +111,11 @@ struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
         exit(EXIT_FAILURE);
     }
 
-    fprintf(output_file_txt, "\n\nseq \t %10jd.%09ld\n", seq_time.tv_sec, seq_time.tv_nsec);
+    fprintf(output_file_txt, "\n\nserial: \t %10jd.%09ld\n", serial_time.tv_sec, serial_time.tv_nsec);
     for (int i = 0; i < num_threads; i++) {
-        fprintf(output_file_txt, "\tthread %d \t %10jd.%09ld\n", i, thread_time[i].tv_sec, thread_time[i].tv_nsec);
+        fprintf(output_file_txt, "\tthread: %d \t %10jd.%09ld\n", i, thread_time[i].tv_sec, thread_time[i].tv_nsec);
     }
-    fprintf(output_file_txt, "total \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
+    fprintf(output_file_txt, "total: \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
 
     fclose(output_file_txt);
     free(output_txt);

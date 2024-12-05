@@ -20,11 +20,13 @@ typedef struct {
     size_t size;
 } FileInfo;
 
+
 // Helper function to extract a numeric value from a string
 int extract_number(const char *str) {
     while (*str && !isdigit(*str)) str++; // Skip non-digit characters
     return isdigit(*str) ? atoi(str) : 0; // Convert number to integer
 }
+
 
 // Comparison function for sorting by name (natural sorting)
 int compare_by_name_natural(const void *a, const void *b) {
@@ -50,6 +52,7 @@ int compare_by_size(const void *a, const void *b) {
     FileInfo *file2 = (FileInfo *)b;
     return (file1->size < file2->size) ? -1 : (file1->size > file2->size);
 }
+
 
 // Function to collect, sort, and display .jpg files
 void process_jpg_files(const char *directory, const char *sort_option, size_t *file_count) {
@@ -164,9 +167,9 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
     return;
 }
 
+
 // Function to validate and parse command line arguments
 int read_command_line(int argc, char *argv[], size_t *file_count) {
-    const char *OUTPUT_DIR = "/old_photo_PAR_A";
     if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
         exit(EXIT_FAILURE);
@@ -193,6 +196,7 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
 
     return num_threads;
 }
+
 
 void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory) {
     const char *OUTPUT_DIR = "/old_photo_PAR_A";
@@ -229,9 +233,18 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
     }
     snprintf(*output_txt, output_txt_len, "%s/%s%d%s", argv[1], OUTPUT_TXT_PREFIX, atoi(argv[2]), suffix);
 
+
+    struct stat st = {0};
+    if (stat(*output_directory, &st) == -1) {
+        if (mkdir(*output_directory, 0777) == -1) {
+            perror("Failed to create output directory");
+            free(*output_directory);
+            exit(EXIT_FAILURE);
+        }
+    }
+
     return;
 }
-
 
 
 // Thread function to process images
@@ -272,8 +285,6 @@ void *process_image(void *input_struct) {
         gdImageDestroy(out_sepia_img);
         gdImageDestroy(in_img);
     }
-
-
 
     clock_gettime(CLOCK_MONOTONIC, &data->end_thread);
     
