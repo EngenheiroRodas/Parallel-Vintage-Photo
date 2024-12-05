@@ -2,6 +2,7 @@
 #define HELPER_F_H
 
 #include <stdlib.h>
+#include <time.h>
 
 typedef struct {
     int start_index;         // Starting index of files for the thread
