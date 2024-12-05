@@ -248,20 +248,27 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
 
 
 // Thread function to process images
-void *process_image(void *input_struct) {
+void *process_image(void *input_struct) {   
     input *data = (input *)input_struct;
+    
     clock_gettime(CLOCK_MONOTONIC, &data->start_thread);
+
+    int file_index;
     char full_path[512];
     char out_file_name[512]; // Adjusted for sufficient length
 
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
 
-    for (int i = data->start_index; i <= data->end_index; i++) {
-        snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[i]);
-        if (access(out_file_name, F_OK) != -1)  continue;
+    for (int i = 0; i < data->file_count; i++) {
+        file_index = data->file_indices[i];
 
-        snprintf(full_path, sizeof(full_path), "%s/%s", data->input_directory, file_list[i]);
-        printf("image %s\n", file_list[i]);
+        snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[file_index]);
+        if (access(out_file_name, F_OK) != -1)  
+            continue;
+
+        snprintf(full_path, sizeof(full_path), "%s/%s", data->input_directory, file_list[file_index]);
+
+        printf("image %s\n", file_list[file_index]);
 
         in_img = read_jpeg_file(full_path);
         if (!in_img) {
@@ -274,7 +281,6 @@ void *process_image(void *input_struct) {
         out_textured_img = texture_image(out_smoothed_img, data->in_texture_img);
         out_sepia_img = sepia_image(out_textured_img);
 
-        snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[i]);
         if (!write_jpeg_file(out_sepia_img, out_file_name)) {
             fprintf(stderr, "Failed to write image: %s\n", out_file_name);
         }

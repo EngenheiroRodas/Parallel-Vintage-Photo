@@ -5,12 +5,11 @@
 #include <time.h>
 
 typedef struct {
-    int start_index;         // Starting index of files for the thread
-    int end_index;           // Ending index of files for the thread
-    char *output_directory;  // Output directory path
-    char *input_directory;   // Input directory path
-    struct timespec start_thread, end_thread;  // Start time of the thread
-    gdImagePtr in_texture_img;
+    char *output_directory, *input_directory; // Output and input directories
+    int *file_indices;                        // Array of file indices to process
+    int file_count;                           // Number of files assigned to this thread
+    struct timespec start_thread, end_thread; // Start time of the thread
+    gdImagePtr in_texture_img;                // Texture image
 } input;
 
 extern char **file_list; // Shared file list accessible by threads

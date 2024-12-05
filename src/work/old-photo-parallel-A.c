@@ -47,19 +47,46 @@ int main(int argc, char *argv[]) {
 
     int files_per_thread = file_count / num_threads;
     int remainder = file_count % num_threads;
-    int current_file = 0;
+    if (remainder > 0) {
+        files_per_thread++;
+    }
 
+    // Distribute files in a round-robin manner
     for (int i = 0; i < num_threads; i++) {
-        thread_inputs[i].start_index = current_file;
         thread_inputs[i].output_directory = output_directory;
         thread_inputs[i].input_directory = argv[1];
-        current_file += files_per_thread;
-        if (remainder > 0) {
-            current_file++;
-            remainder--;
-        }
-        thread_inputs[i].end_index = current_file - 1;
         thread_inputs[i].in_texture_img = texture_img;
+
+        // Assign files to each thread
+        thread_inputs[i].file_indices = malloc(files_per_thread * sizeof(int));
+        if (!thread_inputs[i].file_indices) {
+            perror("Failed to allocate memory for file indices");
+            exit(EXIT_FAILURE);
+        }
+
+        thread_inputs[i].file_count = 0; // Initialize count of files for this thread
+        for (int j = i; j < file_count; j += num_threads) {
+            thread_inputs[i].file_indices[thread_inputs[i].file_count++] = j;
+        }
+    }
+
+    // Distribute files in a round-robin manner
+    for (int i = 0; i < num_threads; i++) {
+        thread_inputs[i].output_directory = output_directory;
+        thread_inputs[i].input_directory = argv[1];
+        thread_inputs[i].in_texture_img = texture_img;
+
+        // Assign files to each thread
+        thread_inputs[i].file_indices = malloc(files_per_thread * sizeof(int));
+        if (!thread_inputs[i].file_indices) {
+            perror("Failed to allocate memory for file indices");
+            exit(EXIT_FAILURE);
+        }
+
+        thread_inputs[i].file_count = 0; // Initialize count of files for this thread
+        for (int j = i; j < file_count; j += num_threads) {
+            thread_inputs[i].file_indices[thread_inputs[i].file_count++] = j;
+        }
     }
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
