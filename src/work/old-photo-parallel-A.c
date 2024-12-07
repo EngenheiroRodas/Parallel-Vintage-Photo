@@ -30,16 +30,18 @@ int main(int argc, char *argv[]) {
     int num_threads;
     size_t file_count = 0;
 
+    // Texture read only one time
     gdImagePtr texture_img = read_png_file("./paper-texture.png");
     if (!texture_img) {
         fprintf(stderr, "Error reading texture image.\n");
         pthread_exit(NULL);
     }
 
+    // Edit timing.txt and output directory paths
     edit_paths(argc, argv, &output_txt, &output_directory);
 
+    // No more threads than files
     num_threads = read_command_line(argc, argv, &file_count);
-
 
     // Prep of thread argument parsing
     pthread_t threads[num_threads];
@@ -51,26 +53,7 @@ int main(int argc, char *argv[]) {
         files_per_thread++;
     }
 
-    // Distribute files in a round-robin manner
-    for (int i = 0; i < num_threads; i++) {
-        thread_inputs[i].output_directory = output_directory;
-        thread_inputs[i].input_directory = argv[1];
-        thread_inputs[i].in_texture_img = texture_img;
-
-        // Assign files to each thread
-        thread_inputs[i].file_indices = malloc(files_per_thread * sizeof(int));
-        if (!thread_inputs[i].file_indices) {
-            perror("Failed to allocate memory for file indices");
-            exit(EXIT_FAILURE);
-        }
-
-        thread_inputs[i].file_count = 0; // Initialize count of files for this thread
-        for (int j = i; j < file_count; j += num_threads) {
-            thread_inputs[i].file_indices[thread_inputs[i].file_count++] = j;
-        }
-    }
-
-    // Distribute files in a round-robin manner
+    // Distribution of files
     for (int i = 0; i < num_threads; i++) {
         thread_inputs[i].output_directory = output_directory;
         thread_inputs[i].input_directory = argv[1];
@@ -90,7 +73,6 @@ int main(int argc, char *argv[]) {
     }
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
-
 
     // Thread launch
     for (int i = 0; i < num_threads; i++) {

@@ -28,12 +28,11 @@ int extract_number(const char *str) {
 }
 
 
-// Comparison function for sorting by name (natural sorting)
+// Comparison function for qsort, when using name sorting
 int compare_by_name_natural(const void *a, const void *b) {
     FileInfo *file1 = (FileInfo *)a;
     FileInfo *file2 = (FileInfo *)b;
 
-    // Extract numbers from the names
     int num1 = extract_number(file1->name);
     int num2 = extract_number(file2->name);
 
@@ -46,7 +45,7 @@ int compare_by_name_natural(const void *a, const void *b) {
     return strcmp(file1->name, file2->name);
 }
 
-// Comparison function for sorting by size
+// Comparison function for qsort when using size sorting
 int compare_by_size(const void *a, const void *b) {
     FileInfo *file1 = (FileInfo *)a;
     FileInfo *file2 = (FileInfo *)b;
@@ -54,7 +53,7 @@ int compare_by_size(const void *a, const void *b) {
 }
 
 
-// Function to collect, sort, and display .jpg files
+// Function to collect and sort .jpg files in the input directory
 void process_jpg_files(const char *directory, const char *sort_option, size_t *file_count) {
     DIR *d;
     struct dirent *f;
@@ -84,7 +83,7 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
             continue;
         }
 
-        // Check if file extension is ".jpg" or ".jpeg" (case-insensitive)
+        // Check if file extension is ".jpg" or ".jpeg"
         const char *ext = strrchr(f->d_name, '.');
         if (!ext || 
             (strcasecmp(ext, ".jpg") != 0 && strcasecmp(ext, ".jpeg") != 0)) {
@@ -92,7 +91,7 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
         }
 
         // Build full file path
-        size_t path_length = strlen(directory) + strlen(f->d_name) + 2; // +2 for '/' and '\0'
+        size_t path_length = strlen(directory) + strlen(f->d_name) + 2;
         char *filepath = malloc(path_length);
         if (!filepath) {
             perror("Failed to allocate memory for filepath");
@@ -102,7 +101,6 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
         }
         snprintf(filepath, path_length, "%s/%s", directory, f->d_name);
 
-        // Get file stats
         if (stat(filepath, &st) == -1) {
             perror("stat failed");
             free(filepath);
@@ -120,17 +118,12 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
                 exit(EXIT_FAILURE);
             }
         }
-
-        // Store file info
         files[*file_count].name = strdup(f->d_name); // Duplicate file name
         files[*file_count].size = st.st_size;
         (*file_count)++;
 
-        // Free filepath
         free(filepath);
     }
-
-    // Close the directory
     closedir(d);
 
     // Sort files array
@@ -138,13 +131,6 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
         qsort(files, *file_count, sizeof(FileInfo), compare_by_size);
     } else if (strcmp(sort_option, "-name") == 0) {
         qsort(files, *file_count, sizeof(FileInfo), compare_by_name_natural);
-    } else {
-        fprintf(stderr, "Invalid sorting option. Use -size or -name.\n");
-        for (size_t i = 0; i < *file_count; i++) {
-            free(files[i].name);
-        }
-        free(files);
-        exit(EXIT_FAILURE);
     }
 
     // Allocate and populate the shared file list
@@ -160,8 +146,6 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
     for (size_t i = 0; i < *file_count; i++) {
         file_list[i] = files[i].name; // Transfer ownership
     }
-
-    // Free the FileInfo array but not the names (now owned by file_list)
     free(files);
 
     return;
@@ -175,11 +159,7 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
         exit(EXIT_FAILURE);
     }
 
-    if (strcmp(argv[3], "-name") != 0 && strcmp(argv[3], "-size") != 0) {
-        fprintf(stderr, "Invalid mode: Use '-name' or '-size'.\n");
-        exit(EXIT_FAILURE);
-    }
-
+    // Retrieve all .jpg files and updates file_count
     process_jpg_files(argv[1], argv[3], file_count);
 
     if (*file_count == 0) {
@@ -192,6 +172,8 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
         fprintf(stderr, "Invalid number of threads. The number of threads to create must be a positive number.\n");
         exit(EXIT_FAILURE);
     }
+
+    // Main won't create more threads than files
     if (num_threads > *file_count) num_threads = *file_count;
 
     return num_threads;
@@ -209,7 +191,7 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
     } else if (strcmp(argv[3], "-name") == 0) {
         suffix = "-name.txt";
     } else {
-        fprintf(stderr, "Invalid third argument. Must be '-size' or '-name'.\n");
+        fprintf(stderr, "Invalid mode. Must be '-size' or '-name'.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -222,7 +204,9 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
     }
     snprintf(*output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
 
-    // Create output file path (inside the input directory)
+
+
+    // Create output timing.txt file path
     size_t output_txt_len = strlen(argv[1]) + strlen("/") + strlen(OUTPUT_TXT_PREFIX) +
                             snprintf(NULL, 0, "%d", atoi(argv[2])) + strlen(suffix) + 1;
     *output_txt = malloc(output_txt_len);
@@ -258,6 +242,7 @@ void *process_image(void *input_struct) {
     char out_file_name[512]; // Adjusted for sufficient length
 
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
+
 
     for (int i = 0; i < data->file_count; i++) {
         file_index = data->file_indices[i];
