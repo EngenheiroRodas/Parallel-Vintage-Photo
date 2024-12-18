@@ -18,6 +18,8 @@
 #include "image-lib.h"
 #include "helper_f.h"
 
+int pipe_fd[2];
+
 int main(int argc, char *argv[]) {
     struct timespec start_time_total, end_time_total;
     struct timespec start_time_serial, end_time_serial;
@@ -37,6 +39,11 @@ int main(int argc, char *argv[]) {
         pthread_exit(NULL);
     }
 
+    if (pipe(pipe_fd) == -1) {
+        perror("Failed to create pipe");
+        exit(EXIT_FAILURE);
+    }
+
     // Edit timing.txt and output directory paths
     edit_paths(argc, argv, &output_txt, &output_directory);
 
@@ -47,30 +54,14 @@ int main(int argc, char *argv[]) {
     pthread_t threads[num_threads];
     input thread_inputs[num_threads];
 
-    int files_per_thread = file_count / num_threads;
-    int remainder = file_count % num_threads;
-    if (remainder > 0) {
-        files_per_thread++;
-    }
-
-    // Distribution of files
-    for (int i = 0; i < num_threads; i++) {
-        thread_inputs[i].output_directory = output_directory;
-        thread_inputs[i].input_directory = argv[1];
-        thread_inputs[i].in_texture_img = texture_img;
-
-        // Assign files to each thread
-        thread_inputs[i].file_indices = malloc(files_per_thread * sizeof(int));
-        if (!thread_inputs[i].file_indices) {
-            perror("Failed to allocate memory for file indices");
+    for (size_t i = 0; i < file_count; i++) {
+        if (write(pipe_fd[1], file_list[i], strlen(file_list[i])) == -1) {
+            perror("Failed to write to pipe");
+            free(output_directory);
             exit(EXIT_FAILURE);
         }
-
-        thread_inputs[i].file_count = 0; // Initialize count of files for this thread
-        for (int j = i; j < file_count; j += num_threads) {
-            thread_inputs[i].file_indices[thread_inputs[i].file_count++] = j;
-        }
     }
+
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
 

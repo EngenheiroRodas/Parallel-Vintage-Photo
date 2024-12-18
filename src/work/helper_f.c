@@ -181,7 +181,7 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
 
 
 void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory) {
-    const char *OUTPUT_DIR = "/old_photo_PAR_A";
+    const char *OUTPUT_DIR = "/old_photo_PAR_B";
     const char *OUTPUT_TXT_PREFIX = "timing_";
 
     // Validate the suffix argument

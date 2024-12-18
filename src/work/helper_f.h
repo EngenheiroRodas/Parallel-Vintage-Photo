@@ -6,13 +6,17 @@
 
 typedef struct {
     char *output_directory, *input_directory; // Output and input directories
-    int *file_indices;                        // Array of file indices to process
-    int file_count;                           // Number of files assigned to this thread
     struct timespec start_thread, end_thread; // Start time of the thread
     gdImagePtr in_texture_img;                // Texture image
 } input;
 
 extern char **file_list; // Shared file list accessible by threads
+
+extern int pipe_fd[2];
+
+extern *output_directory, *input_directory;
+
+extern gdImagePtr in_texture_img;
 
 int read_command_line(int argc, char *argv[], size_t *file_count);
 
