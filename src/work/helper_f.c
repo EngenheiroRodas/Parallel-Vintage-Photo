@@ -233,28 +233,43 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
 }
 
 
-// Thread function to process images
-void *process_image(void *arg) {   
+void *process_image(void *arg) {
     struct timespec start_thread, end_thread, thread_time;
     clock_gettime(CLOCK_MONOTONIC, &start_thread);
 
     char full_path[512];
-    char out_file_name[512]; // Adjusted for sufficient length
-
+    char out_file_name[512];
     char current_file[512];
 
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
 
     while (1) {
-        current_file = read;
+        ssize_t bytes_read = read(pipe_fd[0], current_file, sizeof(current_file) - 1);
+        if (bytes_read == -1) {
+            perror("Failed to read from pipe");
+            pthread_exit(NULL);
+        } else if (bytes_read == 0) {
+            // No more data to read; exit the loop
+            break;
+        }
+
+        current_file[bytes_read] = '\0'; // Null-terminate the string
+
+        // Remove trailing newline added during writing
+        char *newline_pos = strchr(current_file, '\n');
+        if (newline_pos) *newline_pos = '\0';
+
+        // Generate output file path and check if it already exists
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", output_directory, current_file);
-        if (access(out_file_name, F_OK) != -1)  
+        if (access(out_file_name, F_OK) != -1) {
             continue;
+        }
 
         snprintf(full_path, sizeof(full_path), "%s/%s", input_directory, current_file);
 
-        printf("image %s\n", current_file);
+        printf("Processing image: %s\n", current_file);
 
+        // Read and process the image
         in_img = read_jpeg_file(full_path);
         if (!in_img) {
             fprintf(stderr, "Cannot read image: %s\n", full_path);
@@ -270,6 +285,7 @@ void *process_image(void *arg) {
             fprintf(stderr, "Failed to write image: %s\n", out_file_name);
         }
 
+        // Cleanup
         gdImageDestroy(out_contrast_img);
         gdImageDestroy(out_smoothed_img);
         gdImageDestroy(out_textured_img);
@@ -282,7 +298,10 @@ void *process_image(void *arg) {
     }
 
     clock_gettime(CLOCK_MONOTONIC, &end_thread);
-    thread_time = diff_timespec(&end_thread, &start_thread);s how you can modify 
-    
-    pthread_exit(thread_time);
+    thread_time = diff_timespec(&end_thread, &start_thread);
+
+    struct timespec *thread_time_ptr = malloc(sizeof(struct timespec));
+    *thread_time_ptr = thread_time;
+
+    pthread_exit(thread_time_ptr);
 }

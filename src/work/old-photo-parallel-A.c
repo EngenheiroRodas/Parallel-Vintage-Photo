@@ -15,6 +15,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <errno.h>
+#include <unistd.h>
 #include "image-lib.h"
 #include "helper_f.h"
 
@@ -86,14 +87,17 @@ struct timespec thread_time[num_threads];
     }
 
     for (int i = 0; i < num_threads; i++) {
-        if (pthread_join(threads[i], thread_time[i]) != 0) {
+        struct timespec *thread_time_ptr;
+        if (pthread_join(threads[i], (void **)&thread_time_ptr) != 0) {
             perror("Failed to join thread");
             free(output_directory);
             exit(EXIT_FAILURE);
         }
+        thread_time[i] = *thread_time_ptr; // Copy the thread time
+        free(thread_time_ptr); // Free the allocated memory
     }
-    // Thread return and cleanup
 
+    // Thread return and cleanup
     free(output_directory);
     for (size_t i = 0; i < file_count; i++) {
         free(file_list[i]);
