@@ -14,6 +14,8 @@
 
 char **file_list = NULL; // Shared file list accessible by threads
 
+int counter; // Counter to know how many files have been processed
+
 // Structure to store file information
 typedef struct {
     char *name;
@@ -232,28 +234,26 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
 
 
 // Thread function to process images
-void *process_image(void *input_struct) {   
-    input *data = (input *)input_struct;
-    
-    clock_gettime(CLOCK_MONOTONIC, &data->start_thread);
+void *process_image(void *arg) {   
+    struct timespec start_thread, end_thread, thread_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_thread);
 
-    int file_index;
     char full_path[512];
     char out_file_name[512]; // Adjusted for sufficient length
 
+    char current_file[512];
+
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
 
-
-    for (int i = 0; i < data->file_count; i++) {
-        file_index = data->file_indices[i];
-
-        snprintf(out_file_name, sizeof(out_file_name), "%s/%s", data->output_directory, file_list[file_index]);
+    while (1) {
+        current_file = read;
+        snprintf(out_file_name, sizeof(out_file_name), "%s/%s", output_directory, current_file);
         if (access(out_file_name, F_OK) != -1)  
             continue;
 
-        snprintf(full_path, sizeof(full_path), "%s/%s", data->input_directory, file_list[file_index]);
+        snprintf(full_path, sizeof(full_path), "%s/%s", input_directory, current_file);
 
-        printf("image %s\n", file_list[file_index]);
+        printf("image %s\n", current_file);
 
         in_img = read_jpeg_file(full_path);
         if (!in_img) {
@@ -263,7 +263,7 @@ void *process_image(void *input_struct) {
 
         out_contrast_img = contrast_image(in_img);
         out_smoothed_img = smooth_image(out_contrast_img);
-        out_textured_img = texture_image(out_smoothed_img, data->in_texture_img);
+        out_textured_img = texture_image(out_smoothed_img, in_texture_img);
         out_sepia_img = sepia_image(out_textured_img);
 
         if (!write_jpeg_file(out_sepia_img, out_file_name)) {
@@ -275,9 +275,14 @@ void *process_image(void *input_struct) {
         gdImageDestroy(out_textured_img);
         gdImageDestroy(out_sepia_img);
         gdImageDestroy(in_img);
+
+        pthread_mutex_lock(&lock);
+        counter++;
+        pthread_mutex_unlock(&lock);
     }
 
-    clock_gettime(CLOCK_MONOTONIC, &data->end_thread);
+    clock_gettime(CLOCK_MONOTONIC, &end_thread);
+    thread_time = diff_timespec(&end_thread, &start_thread);s how you can modify 
     
-    return NULL;
+    pthread_exit(thread_time);
 }

@@ -4,19 +4,15 @@
 #include <stdlib.h>
 #include <time.h>
 
-typedef struct {
-    char *output_directory, *input_directory; // Output and input directories
-    struct timespec start_thread, end_thread; // Start time of the thread
-    gdImagePtr in_texture_img;                // Texture image
-} input;
-
-extern char **file_list; // Shared file list accessible by threads
+extern char **file_list, *output_directory, *input_directory;
 
 extern int pipe_fd[2];
 
-extern *output_directory, *input_directory;
+extern int counter;
 
 extern gdImagePtr in_texture_img;
+
+extern pthread_mutex_t lock;
 
 int read_command_line(int argc, char *argv[], size_t *file_count);
 

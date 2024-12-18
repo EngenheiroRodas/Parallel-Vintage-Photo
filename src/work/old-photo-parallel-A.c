@@ -20,6 +20,12 @@
 
 int pipe_fd[2];
 
+char *input_directory, *output_directory;
+
+gdImagePtr in_texture_img;
+
+pthread_mutex_t lock;
+
 int main(int argc, char *argv[]) {
     struct timespec start_time_total, end_time_total;
     struct timespec start_time_serial, end_time_serial;
@@ -28,13 +34,13 @@ int main(int argc, char *argv[]) {
 	clock_gettime(CLOCK_MONOTONIC, &start_time_serial);
 
     FILE *output_file_txt;
-    char *output_txt, *output_directory;
+    char *output_txt;
     int num_threads;
     size_t file_count = 0;
 
     // Texture read only one time
-    gdImagePtr texture_img = read_png_file("./paper-texture.png");
-    if (!texture_img) {
+    in_texture_img = read_png_file("./paper-texture.png");
+    if (!in_texture_img) {
         fprintf(stderr, "Error reading texture image.\n");
         pthread_exit(NULL);
     }
@@ -44,15 +50,21 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    if (pthread_mutex_init(&lock, NULL) != 0) {
+        perror("Failed to create mutex");
+        exit(EXIT_FAILURE);
+    }
+
     // Edit timing.txt and output directory paths
     edit_paths(argc, argv, &output_txt, &output_directory);
+    input_directory = argv[1];
 
     // No more threads than files
     num_threads = read_command_line(argc, argv, &file_count);
 
     // Prep of thread argument parsing
     pthread_t threads[num_threads];
-    input thread_inputs[num_threads];
+struct timespec thread_time[num_threads];
 
     for (size_t i = 0; i < file_count; i++) {
         if (write(pipe_fd[1], file_list[i], strlen(file_list[i])) == -1) {
@@ -62,12 +74,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
 
     // Thread launch
     for (int i = 0; i < num_threads; i++) {
-        if (pthread_create(&threads[i], NULL, process_image, &thread_inputs[i]) != 0) {
+        if (pthread_create(&threads[i], NULL, process_image, NULL) != 0) {
             perror("Failed to create thread");
             free(output_directory);
             exit(EXIT_FAILURE);
@@ -75,7 +86,7 @@ int main(int argc, char *argv[]) {
     }
 
     for (int i = 0; i < num_threads; i++) {
-        if (pthread_join(threads[i], NULL) != 0) {
+        if (pthread_join(threads[i], thread_time[i]) != 0) {
             perror("Failed to join thread");
             free(output_directory);
             exit(EXIT_FAILURE);
@@ -89,21 +100,19 @@ int main(int argc, char *argv[]) {
     }
     free(file_list);
 
-    gdImageDestroy(texture_img);
+    gdImageDestroy(in_texture_img);
 
     printf("All images processed successfully.\n");
+
+    pthread_mutex_destroy(&lock);
     
 	clock_gettime(CLOCK_MONOTONIC, &end_time_total);
 
-struct timespec thread_time[num_threads];
+
 struct timespec serial_time = diff_timespec(&end_time_serial, &start_time_serial);
 struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
 
-    // Printing of times to timing_<n>-<MODE>.txt
-    for (int i = 0; i < num_threads; i++) {
-        thread_time[i] = diff_timespec(&thread_inputs[i].end_thread, &thread_inputs[i].start_thread);
-    }
-
+    //Starts writing to text file
     output_file_txt = fopen(output_txt, "w");
     if (output_file_txt == NULL) {
         perror("Failed to open output file");
