@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 
     // Prep of thread argument parsing
     pthread_t thread_ids[num_threads + 1];
-struct timespec thread_time[num_threads];
+    struct timespec thread_time[num_threads];
     
     // Write addresses to pipe
     for (size_t i = 0; i < file_count; i++) {

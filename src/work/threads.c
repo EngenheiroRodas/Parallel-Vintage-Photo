@@ -17,7 +17,7 @@ void *process_image(void *arg) {
 
     clock_gettime(CLOCK_MONOTONIC, &start_thread);
 
-    char full_path[512];
+    char input_path[512];
     char out_file_name[512];
     char *current_file;
 
@@ -35,17 +35,14 @@ void *process_image(void *arg) {
             break;
         }
 
-        // Generate output file path and check if it already exists
+        // Generate output file path and 
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", output_directory, current_file);
-        if (access(out_file_name, F_OK) != -1) {
-            continue; // Skip processing if the output file already exists
-        }
 
-        snprintf(full_path, sizeof(full_path), "%s/%s", input_directory, current_file);
+        snprintf(input_path, sizeof(input_path), "%s/%s", input_directory, current_file);
 
-        in_img = read_jpeg_file(full_path);
+        in_img = read_jpeg_file(input_path);
         if (!in_img) {
-            fprintf(stderr, "Cannot read image: %s\n", full_path);
+            fprintf(stderr, "Cannot read image: %s\n", input_path);
             continue;
         }
 
@@ -102,7 +99,6 @@ void *handle_key_press(void *arg) {
         if (done_flag) {
             break;
         }
-
         // Set up the timeout and file descriptor set
         timeout.tv_sec = 0;
         timeout.tv_usec = 100000; // Check every 100 ms
