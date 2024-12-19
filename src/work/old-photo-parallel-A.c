@@ -67,18 +67,16 @@ int main(int argc, char *argv[]) {
     pthread_t threads[num_threads];
 struct timespec thread_time[num_threads];
     
-    char message[256];
+
     for (size_t i = 0; i < file_count; i++) {
-    snprintf(message, sizeof(message), "%s\n", file_list[i]); // Add delimiter
-    if (write(pipe_fd[1], message, strlen(message)) == -1) {
+        // Write the pointer to file_list[i] instead of the string content
+        if (write(pipe_fd[1], &file_list[i], sizeof(file_list[i])) == -1) {
             perror("Failed to write to pipe");
             free(output_directory);
             exit(EXIT_FAILURE);
         }
     }
-    close(pipe_fd[1]);
-
-
+    close(pipe_fd[1]); // Close the write end of the pipe
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
 
@@ -101,9 +99,9 @@ struct timespec thread_time[num_threads];
         thread_time[i] = *thread_time_ptr; // Copy the thread time
         free(thread_time_ptr); // Free the allocated memory
     }
+    close(pipe_fd[0]);
 
     // Thread return and cleanup
-    
     for (size_t i = 0; i < file_count; i++) {
         free(file_list[i]);
     }

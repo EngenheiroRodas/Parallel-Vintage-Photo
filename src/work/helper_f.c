@@ -184,7 +184,7 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
 
 void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory) {
     const char *OUTPUT_DIR = "/old_photo_PAR_B";
-    const char *OUTPUT_TXT_PREFIX = "timing_B";
+    const char *OUTPUT_TXT_PREFIX = "timing_B_";
 
     // Validate the suffix argument
     char *suffix = NULL;
@@ -239,13 +239,13 @@ void *process_image(void *arg) {
 
     char full_path[512];
     char out_file_name[512];
-    char current_file[512];
+    char *current_file;
 
-    gdImagePtr out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
+    gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
 
     while (1) {
         // Read a filename from the pipe
-        ssize_t bytes_read = read(pipe_fd[0], current_file, sizeof(current_file) - 1);
+        ssize_t bytes_read = read(pipe_fd[0], &current_file, sizeof(current_file));
         if (bytes_read == -1) {
             perror("Failed to read from pipe");
             pthread_exit(NULL);
@@ -253,15 +253,8 @@ void *process_image(void *arg) {
             // No more data to read; exit the loop
             break;
         }
-
-        current_file[bytes_read] = '\0'; // Null-terminate the string
-
-        printf("Read from pipe: '%s'\n", current_file);
-
-
-        // Remove trailing newline added during writing
-        char *newline_pos = strchr(current_file, '\n');
-        if (newline_pos) *newline_pos = '\0';
+        // Debug: Confirm the current file being processed
+        printf("Processing file: %s\n", current_file);
 
         // Generate output file path and check if it already exists
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", output_directory, current_file);
@@ -271,10 +264,14 @@ void *process_image(void *arg) {
 
         snprintf(full_path, sizeof(full_path), "%s/%s", input_directory, current_file);
 
-        printf("Processing image: %s\n", current_file);
+        in_img = read_jpeg_file(full_path);
+        if (!in_img) {
+            fprintf(stderr, "Cannot read image: %s\n", full_path);
+            continue;
+        }
 
         // Process the image through various filters
-        out_contrast_img = contrast_image(in_texture_img);
+        out_contrast_img = contrast_image(in_img);
         out_smoothed_img = smooth_image(out_contrast_img);
         out_textured_img = texture_image(out_smoothed_img, in_texture_img);
         out_sepia_img = sepia_image(out_textured_img);
@@ -289,6 +286,7 @@ void *process_image(void *arg) {
         gdImageDestroy(out_smoothed_img);
         gdImageDestroy(out_textured_img);
         gdImageDestroy(out_sepia_img);
+        gdImageDestroy(in_img);
 
         // Increment the counter (shared variable)
         pthread_mutex_lock(&lock);

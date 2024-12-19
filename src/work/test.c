@@ -46,11 +46,9 @@ int main(int argc, char *argv[]) {
         printf("file_list[%zu]: %s\n", i, file_list[i]);
     }
 
-    // Write file names to the pipe
-    char message[256];
     for (size_t i = 0; i < file_count; i++) {
-        snprintf(message, sizeof(message), "%s\n", file_list[i]); // Add delimiter
-        if (write(pipe_fd[1], message, strlen(message)) == -1) {
+        // Write the pointer to file_list[i] instead of the string content
+        if (write(pipe_fd[1], &file_list[i], sizeof(file_list[i])) == -1) {
             perror("Failed to write to pipe");
             free(output_directory);
             exit(EXIT_FAILURE);
@@ -59,24 +57,20 @@ int main(int argc, char *argv[]) {
     close(pipe_fd[1]); // Close the write end of the pipe
 
     // Read file names from the pipe and print them
-    char buffer[256];
+    char *current_file;
     printf("\nDebug: Reading from the pipe:\n");
-    for (size_t i = 0; i < file_count; i++) {
-        ssize_t bytes_read = read(pipe_fd[0], buffer, sizeof(buffer) - 1);
+    while (1) {
+        ssize_t bytes_read = read(pipe_fd[0], &current_file, sizeof(current_file));
         if (bytes_read == -1) {
             perror("Failed to read from pipe");
-            free(output_directory);
-            exit(EXIT_FAILURE);
+            pthread_exit(NULL);
         } else if (bytes_read == 0) {
-            break; // End of pipe
+            // No more data to read; exit the loop
+            break;
         }
 
-        buffer[bytes_read] = '\0'; // Null-terminate the string
-        // Remove trailing newline
-        char *newline_pos = strchr(buffer, '\n');
-        if (newline_pos) *newline_pos = '\0';
-
-        printf("Read from pipe: %s\n", buffer);
+        // Use the pointer to access the filename
+        printf("Processing file: %s\n", current_file);
     }
     close(pipe_fd[0]); // Close the read end of the pipe
 
