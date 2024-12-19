@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     input_directory = argv[1];
 
     // No more threads than files
-    num_threads = read_command_line(argc, argv, &file_count);
+    num_threads = read_command_line(argc, argv, &file_count, output_directory);
 
     // Prep of thread argument parsing
     pthread_t thread_ids[num_threads + 1];

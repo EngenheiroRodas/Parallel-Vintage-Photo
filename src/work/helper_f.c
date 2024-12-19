@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <ctype.h> 
 #include <sys/stat.h>
@@ -50,22 +51,21 @@ int compare_by_size(const void *a, const void *b) {
 }
 
 
-// Function to collect and sort .jpg files in the input directory
-void process_jpg_files(const char *directory, const char *sort_option, size_t *file_count) {
+void process_jpg_files(const char *directory, const char *sort_option, size_t *file_count, char *output_directory) {
     DIR *d;
     struct dirent *f;
     struct stat st;
     FileInfo *files = NULL;
     size_t capacity = 10;
 
-    // Allocate initial memory for file array
+    // Allocate initial memory for the file array
     files = malloc(capacity * sizeof(FileInfo));
     if (!files) {
         perror("Failed to allocate memory for files array");
         exit(EXIT_FAILURE);
     }
 
-    // Open the directory
+    // Open the input directory
     d = opendir(directory);
     if (!d) {
         perror("Failed to open input directory");
@@ -82,48 +82,51 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
 
         // Check if file extension is ".jpeg"
         const char *ext = strrchr(f->d_name, '.');
-        if (!ext || 
-            (strcasecmp(ext, ".jpeg") != 0)) {
+        if (!ext || strcasecmp(ext, ".jpeg") != 0) {
             continue;
         }
 
-        // Build full file path
-        size_t path_length = strlen(directory) + strlen(f->d_name) + 2;
-        char *filepath = malloc(path_length);
-        if (!filepath) {
-            perror("Failed to allocate memory for filepath");
-            closedir(d);
-            free(files);
-            exit(EXIT_FAILURE);
-        }
-        snprintf(filepath, path_length, "%s/%s", directory, f->d_name);
+        // Build the full file path
+        char filepath[PATH_MAX];
+        snprintf(filepath, sizeof(filepath), "%s/%s", directory, f->d_name);
 
-        if (stat(filepath, &st) == -1) {
-            perror("stat failed");
-            free(filepath);
+        // Check file stats
+        if (stat(filepath, &st) == -1 || !S_ISREG(st.st_mode)) {
+            perror("stat failed or not a regular file");
             continue;
         }
 
-        // Expand array if needed
+        // Check if the file already exists in the output directory
+        char output_filepath[PATH_MAX];
+        snprintf(output_filepath, sizeof(output_filepath), "%s/%s", output_directory, f->d_name);
+        if (access(output_filepath, F_OK) == 0) {
+            continue; // File already exists, skip
+        }
+
+        // Expand file array if necessary
         if (*file_count == capacity) {
             capacity *= 2;
-            files = realloc(files, capacity * sizeof(FileInfo));
-            if (!files) {
+            FileInfo *new_files = realloc(files, capacity * sizeof(FileInfo));
+            if (!new_files) {
                 perror("Failed to reallocate memory for files array");
                 closedir(d);
-                free(filepath);
+                for (size_t i = 0; i < *file_count; i++) {
+                    free(files[i].name);
+                }
+                free(files);
                 exit(EXIT_FAILURE);
             }
+            files = new_files;
         }
-        files[*file_count].name = strdup(f->d_name); // Duplicate file name
+
+        // Add file information to the list
+        files[*file_count].name = strdup(f->d_name);
         files[*file_count].size = st.st_size;
         (*file_count)++;
-
-        free(filepath);
     }
     closedir(d);
 
-    // Sort files array
+    // Sort files array if necessary
     if (strcmp(sort_option, "-size") == 0) {
         qsort(files, *file_count, sizeof(FileInfo), compare_by_size);
     } else if (strcmp(sort_option, "-name") == 0) {
@@ -144,34 +147,24 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
         file_list[i] = files[i].name; // Transfer ownership
     }
     free(files);
-
-    return;
 }
 
 
 // Function to validate and parse command line arguments
-int read_command_line(int argc, char *argv[], size_t *file_count) {
+int read_command_line(int argc, char *argv[], size_t *file_count, char *output_directory) {
     if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
     // Retrieve all .jpg files and updates file_count
-    process_jpg_files(argv[1], argv[3], file_count);
-
-    if (*file_count == 0) {
-        fprintf(stderr, "No .jpg files found in the specified directory.\n");
-        exit(EXIT_FAILURE);
-    }
+    process_jpg_files(argv[1], argv[3], file_count, output_directory);
 
     int num_threads = atoi(argv[2]);
     if (num_threads <= 0) {
         fprintf(stderr, "Invalid number of threads. The number of threads to create must be a positive number.\n");
         exit(EXIT_FAILURE);
     }
-
-    // Main won't create more threads than files
-    if (num_threads > *file_count) num_threads = *file_count;
 
     return num_threads;
 }
