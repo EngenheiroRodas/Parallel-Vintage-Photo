@@ -1,18 +1,31 @@
-# Target to build the parallel processing program
-all: par
+# Compiler and flags
+CC = gcc
+CFLAGS = -O3 -lpthread -lgd
+
+# Source files and target
+SRCS = old-photo-parallel-B.c helper_f.c threads.c image-lib.c
+OBJS = $(SRCS:.c=.o)
+TARGET = old-photo-parallel-B
+
+# Default target to build the program
+all: $(TARGET)
 
 # Build the main executable
-par: old-photo-parallel-A.c helper_f.c image-lib.c
-	gcc old-photo-parallel-A.c helper_f.c threads.c image-lib.c -g -o old-photo-parallel-A -lgd -lpthread 
+$(TARGET): $(OBJS)
+	$(CC) $(OBJS) -o $(TARGET) $(CFLAGS)
 
-# Clean only the executable
+# Compile object files
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean only the executable and object files
 clean:
-	rm -f par
+	rm -f $(TARGET) $(OBJS)
 
 # Clean all generated files and directories
 clean_all: clean
 	rm -fr ./*-dir
 
 # Run the program
-run_all: all
-	./par
+run: all
+	./$(TARGET)

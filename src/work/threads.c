@@ -127,8 +127,8 @@ void *handle_key_press(void *arg) {
                 pthread_mutex_lock(&lock);
                 printf("\n");
                 printf("======================== STATISTICS ========================\n");
-                printf("Images processed:        %d\n", counter);
-                printf("Images remaining:        %d\n", file_count - counter);
+                printf("Images processed:        %ld\n", counter);
+                printf("Images remaining:        %ld\n", file_count - counter);
                 printf("Average processing time: %ld.%09ld seconds per image\n", 
                        total_pic_time.tv_sec / counter, total_pic_time.tv_nsec / counter);
                 printf("============================================================\n");

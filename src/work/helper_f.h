@@ -5,7 +5,7 @@ extern char **file_list, *output_directory, *input_directory;
 
 extern int pipe_fd[2];
 
-extern int counter;
+extern size_t counter;
 
 extern gdImagePtr in_texture_img;
 

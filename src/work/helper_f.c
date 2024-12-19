@@ -16,7 +16,7 @@
 
 char **file_list = NULL; // Shared file list accessible by threads
 
-int counter; // Counter to know how many files have been processed
+size_t counter; // Counter to know how many files have been processed
 
 // Structure to store file information
 typedef struct {

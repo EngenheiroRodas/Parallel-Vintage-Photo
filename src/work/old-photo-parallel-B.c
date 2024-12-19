@@ -3,7 +3,7 @@
  * LEEC 24/25
  *
  * Projecto - Parte1
- *                           old-photo-parallel-A.c
+ *                           old-photo-parallel-B.c
  * 
  *****************************************************************************/
 #include <gd.h>
