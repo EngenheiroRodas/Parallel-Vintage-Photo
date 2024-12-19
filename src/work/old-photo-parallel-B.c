@@ -2,22 +2,15 @@
  * Programacao Concorrente
  * LEEC 24/25
  *
- * Projecto - Parte1
+ * 
  *                           old-photo-parallel-B.c
  * 
  *****************************************************************************/
-#include <gd.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <pthread.h>
-#include <ctype.h>
-#include <errno.h>
-#include <unistd.h>
 #include <stdbool.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #include "image-lib.h"
 #include "helper_f.h"
@@ -25,11 +18,19 @@
 
 int pipe_fd[2];
 
-size_t file_count = 0;
-
+// Shared filename list accessible by threads
+char **file_list = NULL;
 char *input_directory, *output_directory;
 
-gdImagePtr in_texture_img;
+// Number of files processed, and total number of files
+size_t counter = 0, file_count = 0;
+
+// Time taken for processing all pictures so far
+struct timespec total_pic_time;
+
+bool done_flag = false; // Flag to indicate whether processing is complete
+
+gdImagePtr in_texture_img = NULL; // Texture image
 
 pthread_mutex_t lock;
 

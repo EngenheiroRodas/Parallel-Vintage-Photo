@@ -1,23 +1,14 @@
-#include <gd.h>
-#include <pthread.h>
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h> 
-#include <sys/stat.h>   
-#include <stdlib.h>
-#include <unistd.h>
 #include <stdbool.h>
+#include <pthread.h>
+#include <unistd.h>
 #include <sys/select.h>
 
 #include "image-lib.h"
 #include "threads.h"
 #include "helper_f.h"
-
-bool done_flag = false;
-
-struct timespec total_pic_time;
 
 void *process_image(void *arg) {
     struct timespec start_thread, end_thread, thread_time;

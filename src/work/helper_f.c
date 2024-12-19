@@ -1,22 +1,14 @@
-#include <gd.h>
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dirent.h>
 #include <ctype.h> 
-#include <sys/stat.h>   
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdbool.h>
+#include <sys/stat.h>
 
 #include "image-lib.h"
 #include "helper_f.h"
 
 #define COMMAND_LINE_OPTIONS 3
-
-char **file_list = NULL; // Shared file list accessible by threads
-
-size_t counter; // Counter to know how many files have been processed
 
 // Structure to store file information
 typedef struct {
@@ -48,6 +40,7 @@ int compare_by_name_natural(const void *a, const void *b) {
     // Fallback to lexicographical comparison if no numbers or equal numbers
     return strcmp(file1->name, file2->name);
 }
+
 
 // Comparison function for qsort when using size sorting
 int compare_by_size(const void *a, const void *b) {
@@ -87,10 +80,10 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
             continue;
         }
 
-        // Check if file extension is ".jpg" or ".jpeg"
+        // Check if file extension is ".jpeg"
         const char *ext = strrchr(f->d_name, '.');
         if (!ext || 
-            (strcasecmp(ext, ".jpg") != 0 && strcasecmp(ext, ".jpeg") != 0)) {
+            (strcasecmp(ext, ".jpeg") != 0)) {
             continue;
         }
 
