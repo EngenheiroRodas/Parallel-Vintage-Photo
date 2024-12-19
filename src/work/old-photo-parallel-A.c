@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
 #include <ctype.h>
@@ -18,6 +19,7 @@
 #include <unistd.h>
 #include "image-lib.h"
 #include "helper_f.h"
+#include "threads.h"
 
 int pipe_fd[2];
 
@@ -64,12 +66,11 @@ int main(int argc, char *argv[]) {
     num_threads = read_command_line(argc, argv, &file_count);
 
     // Prep of thread argument parsing
-    pthread_t threads[num_threads];
+    pthread_t thread_ids[num_threads + 1];
 struct timespec thread_time[num_threads];
     
-
+    // Write addresses to pipe
     for (size_t i = 0; i < file_count; i++) {
-        // Write the pointer to file_list[i] instead of the string content
         if (write(pipe_fd[1], &file_list[i], sizeof(char *)) == -1) {
             perror("Failed to write to pipe");
             free(output_directory);
@@ -80,18 +81,31 @@ struct timespec thread_time[num_threads];
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
 
-    // Thread launch
+    // =======================================================================================
+    // Threads that process image
     for (int i = 0; i < num_threads; i++) {
-        if (pthread_create(&threads[i], NULL, process_image, NULL) != 0) {
+        thread_ids[i] = i;
+        if (pthread_create(&thread_ids[i], NULL, process_image, NULL) != 0) {
             perror("Failed to create thread");
             free(output_directory);
             exit(EXIT_FAILURE);
         }
     }
 
+    // Thread launch to handle S key press
+    thread_ids[num_threads] = num_threads;
+    if (pthread_create(&thread_ids[num_threads], NULL, handle_key_press, NULL) != 0) {
+        perror("Failed to create thread");
+        free(output_directory);
+        exit(EXIT_FAILURE);
+    }
+    // =======================================================================================
+
+    // =======================================================================================
+    // Wait for all threads to finish
     for (int i = 0; i < num_threads; i++) {
         struct timespec *thread_time_ptr;
-        if (pthread_join(threads[i], (void **)&thread_time_ptr) != 0) {
+        if (pthread_join(thread_ids[i], (void **)&thread_time_ptr) != 0) {
             perror("Failed to join thread");
             free(output_directory);
             exit(EXIT_FAILURE);
@@ -100,6 +114,15 @@ struct timespec thread_time[num_threads];
         free(thread_time_ptr); // Free the allocated memory
     }
     close(pipe_fd[0]);
+    close(STDIN_FILENO);
+    
+    // Thread join to handle S key press
+    if (pthread_join(thread_ids[num_threads], NULL) != 0) {
+        perror("Failed to join thread");
+        free(output_directory);
+        exit(EXIT_FAILURE);
+    }
+    // =======================================================================================
 
     // Thread return and cleanup
     for (size_t i = 0; i < file_count; i++) {
