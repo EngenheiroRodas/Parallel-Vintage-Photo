@@ -1,7 +1,3 @@
 {
-    "files.associations": {
-        "time.h": "c",
-        "dirent.h": "c"
-    },
     "C_Cpp.errorSquiggles": "disabled"
 }

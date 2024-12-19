@@ -125,8 +125,15 @@ void *handle_key_press(void *arg) {
             char c = getchar();
             if (c == 's' || c == 'S') {
                 pthread_mutex_lock(&lock);
-                printf("Total images processed: %d\n", counter);
-                printf("Average time spent processing images: %10jd.%09ld seconds\n", total_pic_time.tv_sec/counter, total_pic_time.tv_nsec/counter);
+                printf("\n");
+                printf("======================== STATISTICS ========================\n");
+                printf("Images processed:        %d\n", counter);
+                printf("Images remaining:        %d\n", file_count - counter);
+                printf("Average processing time: %ld.%09ld seconds per image\n", 
+                       total_pic_time.tv_sec / counter, total_pic_time.tv_nsec / counter);
+                printf("============================================================\n");
+                printf("\n");
+
                 pthread_mutex_unlock(&lock);
             }
         }

@@ -25,6 +25,8 @@
 
 int pipe_fd[2];
 
+size_t file_count = 0;
+
 char *input_directory, *output_directory;
 
 gdImagePtr in_texture_img;
@@ -41,8 +43,7 @@ int main(int argc, char *argv[]) {
     FILE *output_file_txt;
     char *output_txt;
     int num_threads;
-    size_t file_count = 0;
-
+    
     // Texture read only one time
     in_texture_img = read_png_file("./paper-texture.png");
     if (!in_texture_img) {
