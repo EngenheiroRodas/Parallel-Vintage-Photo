@@ -184,7 +184,7 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
 
 void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory) {
     const char *OUTPUT_DIR = "/old_photo_PAR_B";
-    const char *OUTPUT_TXT_PREFIX = "timing_";
+    const char *OUTPUT_TXT_PREFIX = "timing_B";
 
     // Validate the suffix argument
     char *suffix = NULL;
@@ -241,9 +241,10 @@ void *process_image(void *arg) {
     char out_file_name[512];
     char current_file[512];
 
-    gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
+    gdImagePtr out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
 
     while (1) {
+        // Read a filename from the pipe
         ssize_t bytes_read = read(pipe_fd[0], current_file, sizeof(current_file) - 1);
         if (bytes_read == -1) {
             perror("Failed to read from pipe");
@@ -255,6 +256,9 @@ void *process_image(void *arg) {
 
         current_file[bytes_read] = '\0'; // Null-terminate the string
 
+        printf("Read from pipe: '%s'\n", current_file);
+
+
         // Remove trailing newline added during writing
         char *newline_pos = strchr(current_file, '\n');
         if (newline_pos) *newline_pos = '\0';
@@ -262,41 +266,37 @@ void *process_image(void *arg) {
         // Generate output file path and check if it already exists
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", output_directory, current_file);
         if (access(out_file_name, F_OK) != -1) {
-            continue;
+            continue; // Skip processing if the output file already exists
         }
 
         snprintf(full_path, sizeof(full_path), "%s/%s", input_directory, current_file);
 
         printf("Processing image: %s\n", current_file);
 
-        // Read and process the image
-        in_img = read_jpeg_file(full_path);
-        if (!in_img) {
-            fprintf(stderr, "Cannot read image: %s\n", full_path);
-            continue;
-        }
-
-        out_contrast_img = contrast_image(in_img);
+        // Process the image through various filters
+        out_contrast_img = contrast_image(in_texture_img);
         out_smoothed_img = smooth_image(out_contrast_img);
         out_textured_img = texture_image(out_smoothed_img, in_texture_img);
         out_sepia_img = sepia_image(out_textured_img);
 
+        // Write the processed image to the output file
         if (!write_jpeg_file(out_sepia_img, out_file_name)) {
             fprintf(stderr, "Failed to write image: %s\n", out_file_name);
         }
 
-        // Cleanup
+        // Cleanup intermediate images
         gdImageDestroy(out_contrast_img);
         gdImageDestroy(out_smoothed_img);
         gdImageDestroy(out_textured_img);
         gdImageDestroy(out_sepia_img);
-        gdImageDestroy(in_img);
 
+        // Increment the counter (shared variable)
         pthread_mutex_lock(&lock);
         counter++;
         pthread_mutex_unlock(&lock);
     }
 
+    // Record thread execution time
     clock_gettime(CLOCK_MONOTONIC, &end_thread);
     thread_time = diff_timespec(&end_thread, &start_thread);
 

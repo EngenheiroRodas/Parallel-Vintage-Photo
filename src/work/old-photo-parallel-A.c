@@ -66,14 +66,19 @@ int main(int argc, char *argv[]) {
     // Prep of thread argument parsing
     pthread_t threads[num_threads];
 struct timespec thread_time[num_threads];
-
+    
+    char message[256];
     for (size_t i = 0; i < file_count; i++) {
-        if (write(pipe_fd[1], file_list[i], strlen(file_list[i])) == -1) {
+    snprintf(message, sizeof(message), "%s\n", file_list[i]); // Add delimiter
+    if (write(pipe_fd[1], message, strlen(message)) == -1) {
             perror("Failed to write to pipe");
             free(output_directory);
             exit(EXIT_FAILURE);
         }
     }
+    close(pipe_fd[1]);
+
+
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
 
@@ -98,18 +103,19 @@ struct timespec thread_time[num_threads];
     }
 
     // Thread return and cleanup
-    free(output_directory);
+    
     for (size_t i = 0; i < file_count; i++) {
         free(file_list[i]);
     }
     free(file_list);
+    free(output_directory);
 
     gdImageDestroy(in_texture_img);
 
+    pthread_mutex_destroy(&lock);
+
     printf("All images processed successfully.\n");
 
-    pthread_mutex_destroy(&lock);
-    
 	clock_gettime(CLOCK_MONOTONIC, &end_time_total);
 
 

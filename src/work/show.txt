@@ -1,0 +1,31 @@
+old-parallel-photo-A
+Read from pipe: 'IST-0.jpeg
+IST-1.jpeg
+IST-2.jpeg
+IST-8.jpeg
+IST-7.jpeg
+IST-9.jpeg
+IST-5.jpeg
+IST-6.jpeg
+IST-3.jpeg
+IST-4.jpeg
+'
+All images processed successfully.
+
+
+testDebug: Contents of file_list (10 files):
+file_list[0]: IST-0.jpeg
+file_list[1]: IST-1.jpeg
+file_list[2]: IST-2.jpeg
+file_list[3]: IST-8.jpeg
+file_list[4]: IST-7.jpeg
+file_list[5]: IST-9.jpeg
+file_list[6]: IST-5.jpeg
+file_list[7]: IST-6.jpeg
+file_list[8]: IST-3.jpeg
+file_list[9]: IST-4.jpeg
+
+Debug: Reading from the pipe:
+Read from pipe: IST-0.jpeg
+
+All images processed successfully.
