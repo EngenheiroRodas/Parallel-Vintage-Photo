@@ -7,6 +7,7 @@
 #include <sys/stat.h>   
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #include "image-lib.h"
 #include "helper_f.h"

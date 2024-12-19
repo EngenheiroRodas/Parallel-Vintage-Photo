@@ -17,6 +17,8 @@
 #include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdbool.h>
+
 #include "image-lib.h"
 #include "helper_f.h"
 #include "threads.h"
@@ -114,7 +116,7 @@ struct timespec thread_time[num_threads];
         free(thread_time_ptr); // Free the allocated memory
     }
     close(pipe_fd[0]);
-    close(STDIN_FILENO);
+    done_flag = true; // Signal the key press thread to exit
     
     // Thread join to handle S key press
     if (pthread_join(thread_ids[num_threads], NULL) != 0) {
