@@ -147,7 +147,7 @@ struct timespec thread_time[num_threads];
 struct timespec serial_time = diff_timespec(&end_time_serial, &start_time_serial);
 struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
 
-    //Starts writing to text file
+    // Starts writing to text file
     output_file_txt = fopen(output_txt, "w");
     if (output_file_txt == NULL) {
         perror("Failed to open output file");
@@ -155,14 +155,23 @@ struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
         exit(EXIT_FAILURE);
     }
 
-    fprintf(output_file_txt, "\n\nserial: \t %10jd.%09ld\n", serial_time.tv_sec, serial_time.tv_nsec);
+    // Print serial time
+    fprintf(output_file_txt, "\n\nserial: \t %10jd.%03lds\n", 
+            serial_time.tv_sec, serial_time.tv_nsec / 1000000);
+
+    // Print thread times
     for (int i = 0; i < num_threads; i++) {
-        fprintf(output_file_txt, "\tthread: %d \t %10jd.%09ld\n", i, thread_time[i].tv_sec, thread_time[i].tv_nsec);
+        fprintf(output_file_txt, "\tthread: %d \t %10jd.%03lds\n", i, 
+                thread_time[i].tv_sec, thread_time[i].tv_nsec / 1000000);
     }
-    fprintf(output_file_txt, "total: \t %10jd.%09ld\n", total_time.tv_sec, total_time.tv_nsec);
+
+    // Print total time
+    fprintf(output_file_txt, "total: \t %10jd.%03lds\n", 
+            total_time.tv_sec, total_time.tv_nsec / 1000000);
 
     fclose(output_file_txt);
     free(output_txt);
+
 
     return 0;
 }
