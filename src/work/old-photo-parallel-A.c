@@ -70,7 +70,7 @@ struct timespec thread_time[num_threads];
 
     for (size_t i = 0; i < file_count; i++) {
         // Write the pointer to file_list[i] instead of the string content
-        if (write(pipe_fd[1], &file_list[i], sizeof(file_list[i])) == -1) {
+        if (write(pipe_fd[1], &file_list[i], sizeof(char *)) == -1) {
             perror("Failed to write to pipe");
             free(output_directory);
             exit(EXIT_FAILURE);

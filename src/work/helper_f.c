@@ -245,7 +245,7 @@ void *process_image(void *arg) {
 
     while (1) {
         // Read a filename from the pipe
-        ssize_t bytes_read = read(pipe_fd[0], &current_file, sizeof(current_file));
+        ssize_t bytes_read = read(pipe_fd[0], &current_file, sizeof(char *));
         if (bytes_read == -1) {
             perror("Failed to read from pipe");
             pthread_exit(NULL);
@@ -253,8 +253,6 @@ void *process_image(void *arg) {
             // No more data to read; exit the loop
             break;
         }
-        // Debug: Confirm the current file being processed
-        printf("Processing file: %s\n", current_file);
 
         // Generate output file path and check if it already exists
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", output_directory, current_file);
@@ -269,6 +267,8 @@ void *process_image(void *arg) {
             fprintf(stderr, "Cannot read image: %s\n", full_path);
             continue;
         }
+
+        printf("Processing file: %s\n", current_file);
 
         // Process the image through various filters
         out_contrast_img = contrast_image(in_img);
