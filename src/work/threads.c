@@ -92,43 +92,26 @@ void *process_image(void *arg) {
 }
 
 void *handle_key_press(void *arg) {
-    struct timeval timeout;
-    fd_set read_fds;
-
+    char c;
     while (1) {
-        if (done_flag) {
-            break;
-        }
-        // Set up the timeout and file descriptor set
-        timeout.tv_sec = 0;
-        timeout.tv_usec = 100000; // Check every 100 ms
-        FD_ZERO(&read_fds);
-        FD_SET(STDIN_FILENO, &read_fds);
-
-        // Use select to check for input
-        int ret = select(STDIN_FILENO + 1, &read_fds, NULL, NULL, &timeout);
-        if (ret > 0 && FD_ISSET(STDIN_FILENO, &read_fds)) {
-            char c = getchar();
-            if (c == 's' || c == 'S') {
-                pthread_mutex_lock(&lock);
-                printf("\n");
-                printf("======================== STATISTICS ========================\n");
-                printf("Images processed:        %ld\n", counter);
-                printf("Images remaining:        %ld\n", file_count - counter);
-                if (counter > 0) {
-                printf("Average processing time: %10jd.%03ld seconds per image\n",
-                    total_pic_time.tv_sec / counter, (total_pic_time.tv_nsec / counter) / 1000000);
-                } else {
-                    printf("Average processing time: 0.000 seconds per image\n");
-                }
-                printf("============================================================\n");
-                printf("\n");
-
-
-                pthread_mutex_unlock(&lock);
+        c = getchar();
+        if (c == 's' || c == 'S') {
+            pthread_mutex_lock(&lock);
+            printf("\n");
+            printf("======================== STATISTICS ========================\n");
+            printf("Images processed:        %ld\n", counter);
+            printf("Images remaining:        %ld\n", file_count - counter);
+            if (counter > 0) {
+            printf("Average processing time: %10jd.%03ld seconds per image\n",
+                total_pic_time.tv_sec / counter, (total_pic_time.tv_nsec / counter) / 1000000);
+            } else {
+                printf("Average processing time: 0.000 seconds per image\n");
             }
+            printf("============================================================\n");
+            printf("\n");
+
+            pthread_mutex_unlock(&lock);
         }
     }
-
     pthread_exit(NULL);
 }
