@@ -1,6 +1,7 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -O3 -lpthread -lgd
+CFLAGS = -O3
+LDFLAGS= -lpthread -lgd
 
 # Source files and target
 SRCS = old-photo-parallel-B.c helper_f.c threads.c image-lib.c
@@ -12,7 +13,7 @@ all: $(TARGET)
 
 # Build the main executable
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) -o $(TARGET) $(CFLAGS)
+	$(CC) $(OBJS) -o $(TARGET) $(LDFLAGS)
 
 # Compile object files
 %.o: %.c
