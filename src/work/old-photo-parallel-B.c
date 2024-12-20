@@ -117,6 +117,8 @@ int main(int argc, char *argv[]) {
     }
     close(pipe_fd[0]);
     done_flag = true; // Signal the key press thread to exit
+
+    pthread_cancel(thread_ids[num_threads]); // Cancel the key press thread
     // =======================================================================================
 
     // Thread return and cleanup
@@ -162,7 +164,6 @@ struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
 
     fclose(output_file_txt);
     free(output_txt);
-
 
     return 0;
 }
