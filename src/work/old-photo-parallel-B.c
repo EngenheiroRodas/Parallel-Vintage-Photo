@@ -117,13 +117,6 @@ int main(int argc, char *argv[]) {
     }
     close(pipe_fd[0]);
     done_flag = true; // Signal the key press thread to exit
-    
-    // Thread join to handle S key press
-    if (pthread_join(thread_ids[num_threads], NULL) != 0) {
-        perror("Failed to join thread");
-        free(output_directory);
-        exit(EXIT_FAILURE);
-    }
     // =======================================================================================
 
     // Thread return and cleanup
