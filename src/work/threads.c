@@ -23,17 +23,8 @@ void *process_image(void *arg) {
 
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
 
-    while (1) {
+    while (read(pipe_fd[0], &current_file, sizeof(char *)) > 0) {
         clock_gettime(CLOCK_MONOTONIC, &pic_start);
-        // Read a filename from the pipe
-        ssize_t bytes_read = read(pipe_fd[0], &current_file, sizeof(char *));
-        if (bytes_read == -1) {
-            perror("Failed to read from pipe");
-            pthread_exit(NULL);
-        } else if (bytes_read == 0) {
-            // No more data to read; exit the loop
-            break;
-        }
 
         // Generate output file path and 
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", output_directory, current_file);
@@ -66,16 +57,12 @@ void *process_image(void *arg) {
         gdImageDestroy(out_sepia_img);
         gdImageDestroy(in_img);
 
-        // Increment the counter (shared variable)
-        pthread_mutex_lock(&lock);
-        counter++;
-        pthread_mutex_unlock(&lock);
-
         clock_gettime(CLOCK_MONOTONIC, &pic_end);
         pic_time = diff_timespec(&pic_end, &pic_start);
 
-        // Increment the total time (shared variable)
+        // Increment the total time and counter
         pthread_mutex_lock(&lock);
+        counter++;
         total_pic_time.tv_sec += pic_time.tv_sec;
         total_pic_time.tv_nsec += pic_time.tv_nsec;
         pthread_mutex_unlock(&lock);

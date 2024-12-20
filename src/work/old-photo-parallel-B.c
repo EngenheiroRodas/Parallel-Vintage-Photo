@@ -28,8 +28,6 @@ size_t counter = 0, file_count = 0;
 // Time taken for processing all pictures so far
 struct timespec total_pic_time;
 
-bool done_flag = false; // Flag to indicate whether processing is complete
-
 gdImagePtr in_texture_img = NULL; // Texture image
 
 pthread_mutex_t lock;
@@ -147,7 +145,7 @@ struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
     }
 
     // Print serial time
-    fprintf(output_file_txt, "\n\nserial: \t %10jd.%03lds\n", 
+    fprintf(output_file_txt, "\nserial: \t %10jd.%03lds\n", 
             serial_time.tv_sec, serial_time.tv_nsec / 1000000);
 
     // Print thread times
