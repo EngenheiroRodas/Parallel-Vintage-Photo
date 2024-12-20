@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <ctype.h> 
 #include <sys/stat.h>
+#include <pthread.h>
 
 #include "image-lib.h"
 #include "helper_f.h"
@@ -87,7 +88,7 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
         }
 
         // Build the full file path
-        char filepath[PATH_MAX];
+        char filepath[512];
         snprintf(filepath, sizeof(filepath), "%s/%s", directory, f->d_name);
 
         // Check file stats
@@ -97,7 +98,7 @@ void process_jpg_files(const char *directory, const char *sort_option, size_t *f
         }
 
         // Check if the file already exists in the output directory
-        char output_filepath[PATH_MAX];
+        char output_filepath[512];
         snprintf(output_filepath, sizeof(output_filepath), "%s/%s", output_directory, f->d_name);
         if (access(output_filepath, F_OK) == 0) {
             continue; // File already exists, skip

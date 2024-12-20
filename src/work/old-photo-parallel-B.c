@@ -88,7 +88,6 @@ int main(int argc, char *argv[]) {
     // =======================================================================================
     // Threads that process image
     for (int i = 0; i < num_threads; i++) {
-        thread_ids[i] = i;
         if (pthread_create(&thread_ids[i], NULL, process_image, NULL) != 0) {
             perror("Failed to create thread");
             free(output_directory);
@@ -97,7 +96,6 @@ int main(int argc, char *argv[]) {
     }
 
     // Thread launch to handle S key press
-    thread_ids[num_threads] = num_threads;
     if (pthread_create(&thread_ids[num_threads], NULL, handle_key_press, NULL) != 0) {
         perror("Failed to create thread");
         free(output_directory);

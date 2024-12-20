@@ -1,6 +1,8 @@
 #ifndef HELPER_F_H
 #define HELPER_F_H
 
+
+
 extern int pipe_fd[2];
 
 extern char **file_list, *output_directory, *input_directory;
