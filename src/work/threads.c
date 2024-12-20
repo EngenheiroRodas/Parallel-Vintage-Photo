@@ -93,12 +93,11 @@ void *process_image(void *arg) {
 
 void *handle_key_press(void *arg) {
     char c;
-    while (1) {
-        c = getchar();
+    while (read(STDIN_FILENO, &c, sizeof(char)) > 0) {
         if (c == 's' || c == 'S') {
-            pthread_mutex_lock(&lock);
             printf("\n");
             printf("======================== STATISTICS ========================\n");
+            pthread_mutex_lock(&lock);
             printf("Images processed:        %ld\n", counter);
             printf("Images remaining:        %ld\n", file_count - counter);
             if (counter > 0) {
@@ -107,10 +106,10 @@ void *handle_key_press(void *arg) {
             } else {
                 printf("Average processing time: 0.000 seconds per image\n");
             }
+            pthread_mutex_unlock(&lock);
             printf("============================================================\n");
             printf("\n");
 
-            pthread_mutex_unlock(&lock);
         }
     }
     pthread_exit(NULL);
