@@ -25,7 +25,6 @@ int extract_number(const char *str) {
     return isdigit(*str) ? atoi(str) : 0; // Convert number to integer
 }
 
-
 // Comparison function for qsort, when using name sorting
 int compare_by_name_natural(const void *a, const void *b) {
     FileInfo *file1 = (FileInfo *)a;
@@ -43,7 +42,6 @@ int compare_by_name_natural(const void *a, const void *b) {
     return strcmp(file1->name, file2->name);
 }
 
-
 // Comparison function for qsort when using size sorting
 int compare_by_size(const void *a, const void *b) {
     FileInfo *file1 = (FileInfo *)a;
@@ -52,7 +50,7 @@ int compare_by_size(const void *a, const void *b) {
 }
 
 
-void process_jpg_files(const char *directory, const char *sort_option, size_t *file_count, char *output_directory) {
+void process_jpeg_files(const char *directory, const char *sort_option, size_t *file_count, char *output_directory) {
     DIR *d;
     struct dirent *f;
     struct stat st;
@@ -158,8 +156,8 @@ int read_command_line(int argc, char *argv[], size_t *file_count, char *output_d
         exit(EXIT_FAILURE);
     }
 
-    // Retrieve all .jpg files and updates file_count
-    process_jpg_files(argv[1], argv[3], file_count, output_directory);
+    // Retrieve all .jpeg files and updates file_count
+    process_jpeg_files(argv[1], argv[3], file_count, output_directory);
 
     int num_threads = atoi(argv[2]);
     if (num_threads <= 0) {
@@ -195,8 +193,6 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
     }
     snprintf(*output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
 
-
-
     // Create output timing.txt file path
     size_t output_txt_len = strlen(argv[1]) + strlen("/") + strlen(OUTPUT_TXT_PREFIX) +
                             snprintf(NULL, 0, "%d", atoi(argv[2])) + strlen(suffix) + 1;
@@ -207,7 +203,6 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
         exit(EXIT_FAILURE);
     }
     snprintf(*output_txt, output_txt_len, "%s/%s%d%s", argv[1], OUTPUT_TXT_PREFIX, atoi(argv[2]), suffix);
-
 
     struct stat st = {0};
     if (stat(*output_directory, &st) == -1) {
