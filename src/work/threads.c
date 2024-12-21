@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <sys/select.h>
 
 #include "image-lib.h"
 #include "threads.h"
@@ -63,8 +62,13 @@ void *process_image(void *arg) {
         // Increment the total time and counter
         pthread_mutex_lock(&lock);
         counter++;
-        total_pic_time.tv_sec += pic_time.tv_sec;
+        // Normalize the time
         total_pic_time.tv_nsec += pic_time.tv_nsec;
+        if (total_pic_time.tv_nsec >= 1000000000) {
+            total_pic_time.tv_nsec -= 1000000000;
+            total_pic_time.tv_sec += 1;
+        }
+        total_pic_time.tv_sec += pic_time.tv_sec;
         pthread_mutex_unlock(&lock);
     }
 
@@ -80,6 +84,7 @@ void *process_image(void *arg) {
 
 void *handle_key_press(void *arg) {
     char c;
+    double total_time_in_seconds;
     while (read(STDIN_FILENO, &c, sizeof(char)) > 0) {
         if (c == 's' || c == 'S') {
             printf("\n");
@@ -88,8 +93,8 @@ void *handle_key_press(void *arg) {
             printf("Images processed:        %ld\n", counter);
             printf("Images remaining:        %ld\n", file_count - counter);
             if (counter > 0) {
-            printf("Average processing time: %10jd.%03ld seconds per image\n",
-                total_pic_time.tv_sec / counter, (total_pic_time.tv_nsec / counter) / 1000000);
+                total_time_in_seconds = total_pic_time.tv_sec + total_pic_time.tv_nsec / 1e9;
+                printf("Average processing time: %10.3f seconds per image\n", total_time_in_seconds / counter);
             } else {
                 printf("Average processing time: 0.000 seconds per image\n");
             }
