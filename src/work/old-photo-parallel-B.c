@@ -73,15 +73,11 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // 
-    edit_paths(argc, argv, &output_txt);
-    input_directory = argv[1];
+    output_txt = edit_paths(argc, argv, &output_txt);
+
+    input_directory = argv[1]; // makes argv[1] global
 
     num_threads = read_command_line(argc, argv, &file_count);
-
-    // Prep of thread argument parsing
-    pthread_t thread_ids[num_threads + 1];
-    struct timespec thread_time[num_threads];
     
     // Write addresses to pipe
     for (size_t i = 0; i < file_count; i++) {
@@ -92,6 +88,10 @@ int main(int argc, char *argv[]) {
         }
     }
     close(pipe_fd[1]); // Close the write end of the pipe
+
+    // Prep of thread argument parsing
+    pthread_t thread_ids[num_threads + 1];
+    struct timespec thread_time[num_threads];
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
 
@@ -112,8 +112,6 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     // =======================================================================================
-
-    // =======================================================================================
     // Wait for all threads to finish
     for (int i = 0; i < num_threads; i++) {
         struct timespec *thread_time_ptr;
@@ -129,7 +127,7 @@ int main(int argc, char *argv[]) {
     close(STDIN_FILENO);
     // =======================================================================================
 
-    // Thread return and cleanup
+    // Cleanup
     for (size_t i = 0; i < file_count; i++) {
         free(file_list[i]);
     }
@@ -141,6 +139,7 @@ int main(int argc, char *argv[]) {
     pthread_mutex_destroy(&lock);
 
     printf("All images processed successfully.\n");
+
 
     // =========================== Stat Printing Section =====================================
     clock_gettime(CLOCK_MONOTONIC, &end_time_total);

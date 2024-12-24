@@ -18,6 +18,54 @@ typedef struct {
     size_t size; 
 } FileInfo;
 
+/// @brief Edits file paths of output_txt and global output_directory and creates it.
+/// @param argc 
+/// @param argv 
+/// @param output_txt path to be modified.
+/// @return modified output_txt.
+char *edit_paths(int argc, char *argv[], char **output_txt) {
+    const char *OUTPUT_DIR = "/old_photo_PAR_B";
+    const char *OUTPUT_TXT_PREFIX = "timing_B_";
+
+    char *suffix = NULL;
+    if (strcmp(argv[3], "-size") == 0) {
+        suffix = "-size.txt";
+    } else if (strcmp(argv[3], "-name") == 0) {
+        suffix = "-name.txt";
+    } else {
+        fprintf(stderr, "Invalid mode. Must be '-size' or '-name'.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    size_t output_dir_len = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1;
+    output_directory = malloc(output_dir_len);
+    if (output_directory == NULL) {
+        perror("Failed to allocate memory for output directory path");
+        exit(EXIT_FAILURE);
+    }
+    snprintf(output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
+
+    size_t output_txt_len = strlen(argv[1]) + strlen("/") + strlen(OUTPUT_TXT_PREFIX) +
+                            snprintf(NULL, 0, "%d", atoi(argv[2])) + strlen(suffix) + 1;
+    *output_txt = malloc(output_txt_len);
+    if (*output_txt == NULL) {
+        perror("Failed to allocate memory for output txt path");
+        free(output_directory);
+        exit(EXIT_FAILURE);
+    }
+    snprintf(*output_txt, output_txt_len, "%s/%s%d%s", argv[1], OUTPUT_TXT_PREFIX, atoi(argv[2]), suffix);
+
+    struct stat st = {0};
+    if (stat(output_directory, &st) == -1) {
+        if (mkdir(output_directory, 0777) == -1) {
+            perror("Failed to create output directory");
+            free(output_directory);
+            exit(EXIT_FAILURE);
+        }
+    }
+    return *output_txt;
+}
+
 /// @brief Extracts a numeric value from a string.
 /// @param str Input string containing the numeric value.
 /// @return The extracted numeric value as an integer. Returns 0 if no numeric value is found.
@@ -145,11 +193,10 @@ void get_jpeg_files(const char *directory, const char *sort_option, size_t *file
     free(files);
 }
 
-/// @brief Parses command-line arguments and calls the function to load the file names into file_list. Uses previously edite
+/// @brief Parses command-line arguments and calls the function to load the file names into file_list. Uses previously edited paths.
 /// @param argc 
 /// @param argv 
 /// @param file_count Pointer to the number of files found.
-/// @param output_directory Path to the output directory.
 /// @return The number of threads specified in the command line.
 int read_command_line(int argc, char *argv[], size_t *file_count) {
     if (argc < COMMAND_LINE_OPTIONS + 1) {
@@ -166,53 +213,4 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
     }
 
     return num_threads;
-}
-
-/// @brief Edits file paths of the provided arguments.
-/// @param argc
-/// @param argv
-/// @param output_txt Pointer to the output .txt file path.
-/// @param output_directory Pointer to the output directory path.
-void edit_paths(int argc, char *argv[], char **output_txt) {
-    const char *OUTPUT_DIR = "/old_photo_PAR_B";
-    const char *OUTPUT_TXT_PREFIX = "timing_B_";
-
-    char *suffix = NULL;
-    if (strcmp(argv[3], "-size") == 0) {
-        suffix = "-size.txt";
-    } else if (strcmp(argv[3], "-name") == 0) {
-        suffix = "-name.txt";
-    } else {
-        fprintf(stderr, "Invalid mode. Must be '-size' or '-name'.\n");
-        exit(EXIT_FAILURE);
-    }
-
-    size_t output_dir_len = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1;
-    output_directory = malloc(output_dir_len);
-    if (output_directory == NULL) {
-        perror("Failed to allocate memory for output directory path");
-        exit(EXIT_FAILURE);
-    }
-    snprintf(output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
-
-    size_t output_txt_len = strlen(argv[1]) + strlen("/") + strlen(OUTPUT_TXT_PREFIX) +
-                            snprintf(NULL, 0, "%d", atoi(argv[2])) + strlen(suffix) + 1;
-    *output_txt = malloc(output_txt_len);
-    if (*output_txt == NULL) {
-        perror("Failed to allocate memory for output txt path");
-        free(output_directory);
-        exit(EXIT_FAILURE);
-    }
-    snprintf(*output_txt, output_txt_len, "%s/%s%d%s", argv[1], OUTPUT_TXT_PREFIX, atoi(argv[2]), suffix);
-
-    struct stat st = {0};
-    if (stat(output_directory, &st) == -1) {
-        if (mkdir(output_directory, 0777) == -1) {
-            perror("Failed to create output directory");
-            free(output_directory);
-            exit(EXIT_FAILURE);
-        }
-    }
-
-    return;
 }
