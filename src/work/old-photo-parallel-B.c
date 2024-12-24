@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
     FILE *output_file_txt;
     char *output_txt;
     int num_threads;
+
+    input_directory = argv[1]; // makes argv[1] global
     
     // Texture read only one time
     in_texture_img = read_png_file("./paper-texture.png");
@@ -74,8 +76,6 @@ int main(int argc, char *argv[]) {
     }
 
     output_txt = edit_paths(argc, argv, &output_txt);
-
-    input_directory = argv[1]; // makes argv[1] global
 
     num_threads = read_command_line(argc, argv, &file_count);
     

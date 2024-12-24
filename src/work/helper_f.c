@@ -107,7 +107,7 @@ int compare_by_size(const void *a, const void *b) {
 /// @param sort_option Sorting option (-size or -name).
 /// @param file_count Pointer to the number of files found.
 /// @param output_directory Path to the output directory.
-void get_jpeg_files(const char *directory, const char *sort_option, size_t *file_count) {
+void get_jpeg_files(const char *sort_option, size_t *file_count) {
     DIR *d;
     struct dirent *f;
     struct stat st;
@@ -120,7 +120,7 @@ void get_jpeg_files(const char *directory, const char *sort_option, size_t *file
         exit(EXIT_FAILURE);
     }
 
-    d = opendir(directory);
+    d = opendir(input_directory);
     if (!d) {
         perror("Failed to open input directory");
         free(files);
@@ -138,7 +138,7 @@ void get_jpeg_files(const char *directory, const char *sort_option, size_t *file
         }
 
         char filepath[512];
-        snprintf(filepath, sizeof(filepath), "%s/%s", directory, f->d_name);
+        snprintf(filepath, sizeof(filepath), "%s/%s", input_directory, f->d_name);
 
         if (stat(filepath, &st) == -1 || !S_ISREG(st.st_mode)) {
             perror("stat failed or not a regular file");
@@ -204,7 +204,7 @@ int read_command_line(int argc, char *argv[], size_t *file_count) {
         exit(EXIT_FAILURE);
     }
 
-    get_jpeg_files(argv[1], argv[3], file_count);
+    get_jpeg_files(argv[3], file_count);
 
     int num_threads = atoi(argv[2]);
     if (num_threads <= 0) {
