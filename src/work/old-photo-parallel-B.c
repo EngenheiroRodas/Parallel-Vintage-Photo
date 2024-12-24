@@ -44,13 +44,10 @@ struct timespec total_pic_time;
 gdImagePtr in_texture_img = NULL;
 pthread_mutex_t lock;
 
-/// @brief 
-/// @param argc 
-/// @param argv 
-/// @return 
+
 int main(int argc, char *argv[]) {
-    struct timespec start_time_total, end_time_total;
-    struct timespec start_time_serial, end_time_serial;
+    struct timespec start_time_serial, end_time_serial, serial_time;
+    struct timespec start_time_total, end_time_total, total_time;
 
 	clock_gettime(CLOCK_MONOTONIC, &start_time_total);
 	clock_gettime(CLOCK_MONOTONIC, &start_time_serial);
@@ -76,12 +73,11 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Edit timing.txt and output directory paths
-    edit_paths(argc, argv, &output_txt, &output_directory);
+    // 
+    edit_paths(argc, argv, &output_txt);
     input_directory = argv[1];
 
-    // No more threads than files
-    num_threads = read_command_line(argc, argv, &file_count, output_directory);
+    num_threads = read_command_line(argc, argv, &file_count);
 
     // Prep of thread argument parsing
     pthread_t thread_ids[num_threads + 1];
@@ -146,11 +142,11 @@ int main(int argc, char *argv[]) {
 
     printf("All images processed successfully.\n");
 
-	clock_gettime(CLOCK_MONOTONIC, &end_time_total);
+    // =========================== Stat Printing Section =====================================
+    clock_gettime(CLOCK_MONOTONIC, &end_time_total);
 
-
-struct timespec serial_time = diff_timespec(&end_time_serial, &start_time_serial);
-struct timespec total_time = diff_timespec(&end_time_total, &start_time_total);
+    serial_time = diff_timespec(&end_time_serial, &start_time_serial);
+    total_time = diff_timespec(&end_time_total, &start_time_total);
 
     // Starts writing to text file
     output_file_txt = fopen(output_txt, "w");

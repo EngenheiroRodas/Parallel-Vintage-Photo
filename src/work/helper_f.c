@@ -59,7 +59,7 @@ int compare_by_size(const void *a, const void *b) {
 /// @param sort_option Sorting option (-size or -name).
 /// @param file_count Pointer to the number of files found.
 /// @param output_directory Path to the output directory.
-void get_jpeg_files(const char *directory, const char *sort_option, size_t *file_count, char *output_directory) {
+void get_jpeg_files(const char *directory, const char *sort_option, size_t *file_count) {
     DIR *d;
     struct dirent *f;
     struct stat st;
@@ -145,19 +145,19 @@ void get_jpeg_files(const char *directory, const char *sort_option, size_t *file
     free(files);
 }
 
-/// @brief Parses command-line arguments and calls the function to load the file names into file_list.
+/// @brief Parses command-line arguments and calls the function to load the file names into file_list. Uses previously edite
 /// @param argc 
 /// @param argv 
 /// @param file_count Pointer to the number of files found.
 /// @param output_directory Path to the output directory.
 /// @return The number of threads specified in the command line.
-int read_command_line(int argc, char *argv[], size_t *file_count, char *output_directory) {
+int read_command_line(int argc, char *argv[], size_t *file_count) {
     if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    get_jpeg_files(argv[1], argv[3], file_count, output_directory);
+    get_jpeg_files(argv[1], argv[3], file_count);
 
     int num_threads = atoi(argv[2]);
     if (num_threads <= 0) {
@@ -168,12 +168,12 @@ int read_command_line(int argc, char *argv[], size_t *file_count, char *output_d
     return num_threads;
 }
 
-/// @brief Edits file paths based on the provided arguments and creates output directories if needed.
+/// @brief Edits file paths of the provided arguments.
 /// @param argc
 /// @param argv
 /// @param output_txt Pointer to the output .txt file path.
 /// @param output_directory Pointer to the output directory path.
-void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory) {
+void edit_paths(int argc, char *argv[], char **output_txt) {
     const char *OUTPUT_DIR = "/old_photo_PAR_B";
     const char *OUTPUT_TXT_PREFIX = "timing_B_";
 
@@ -188,28 +188,28 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
     }
 
     size_t output_dir_len = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1;
-    *output_directory = malloc(output_dir_len);
-    if (*output_directory == NULL) {
+    output_directory = malloc(output_dir_len);
+    if (output_directory == NULL) {
         perror("Failed to allocate memory for output directory path");
         exit(EXIT_FAILURE);
     }
-    snprintf(*output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
+    snprintf(output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
 
     size_t output_txt_len = strlen(argv[1]) + strlen("/") + strlen(OUTPUT_TXT_PREFIX) +
                             snprintf(NULL, 0, "%d", atoi(argv[2])) + strlen(suffix) + 1;
     *output_txt = malloc(output_txt_len);
     if (*output_txt == NULL) {
         perror("Failed to allocate memory for output txt path");
-        free(*output_directory);
+        free(output_directory);
         exit(EXIT_FAILURE);
     }
     snprintf(*output_txt, output_txt_len, "%s/%s%d%s", argv[1], OUTPUT_TXT_PREFIX, atoi(argv[2]), suffix);
 
     struct stat st = {0};
-    if (stat(*output_directory, &st) == -1) {
-        if (mkdir(*output_directory, 0777) == -1) {
+    if (stat(output_directory, &st) == -1) {
+        if (mkdir(output_directory, 0777) == -1) {
             perror("Failed to create output directory");
-            free(*output_directory);
+            free(output_directory);
             exit(EXIT_FAILURE);
         }
     }
