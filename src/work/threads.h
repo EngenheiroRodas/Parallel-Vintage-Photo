@@ -3,8 +3,8 @@
 
 extern struct timespec total_pic_time;
 
-void *process_image(void *arg);
+void *process_image();
 
-void *handle_key_press(void *arg);
+void *handle_key_press();
 
 #endif

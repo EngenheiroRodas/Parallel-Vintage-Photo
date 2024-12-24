@@ -9,7 +9,9 @@
 #include "threads.h"
 #include "helper_f.h"
 
-void *process_image(void *arg) {
+/// @brief Process an image producing old-photo effect, and write the output in the specified folder.
+/// @return Pointer to the total execution time of the thread.
+void *process_image() {
     struct timespec start_thread, end_thread, thread_time;
 
     struct timespec pic_start, pic_end, pic_time;
@@ -82,7 +84,9 @@ void *process_image(void *arg) {
     pthread_exit(thread_time_ptr);
 }
 
-void *handle_key_press(void *arg) {
+/// @brief Single thread to watch for key press and print statistics.
+/// @return None.
+void *handle_key_press() {
     char c;
     double total_time_in_seconds;
     while (read(STDIN_FILENO, &c, sizeof(char)) > 0) {

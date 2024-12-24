@@ -16,22 +16,38 @@
 #include "helper_f.h"
 #include "threads.h"
 
+/* 
+ * Global Variables:
+ * 
+ * - pipe_fd[2]: File descriptors for a pipe that holds the file names.
+ * 
+ * - file_list: Dynamically allocated array of strings holding file names to be processed.
+ *   - Initialized to NULL and allocated during runtime.
+ * 
+ * - input_directory, output_directory: Strings holding the paths to the input and output directories.
+ *   - Set once at the start of the program; read-only after initialization.
+ * 
+ * - counter: Tracks the number of files processed so far.
+ * - file_count: Total number of files to be processed.
+ * 
+ * - total_pic_time: Holds the cumulative processing time for all pictures.
+ * 
+ * - in_texture_img: Pointer to an `gdImage` structure holding the texture image.
+ * 
+ * - lock: Mutex used to protect shared resources.
+ */
 int pipe_fd[2];
-
-// Shared filename list accessible by threads
 char **file_list = NULL;
 char *input_directory, *output_directory;
-
-// Number of files processed, and total number of files
 size_t counter = 0, file_count = 0;
-
-// Time taken for processing all pictures so far
 struct timespec total_pic_time;
-
-gdImagePtr in_texture_img = NULL; // Texture image
-
+gdImagePtr in_texture_img = NULL;
 pthread_mutex_t lock;
 
+/// @brief 
+/// @param argc 
+/// @param argv 
+/// @return 
 int main(int argc, char *argv[]) {
     struct timespec start_time_total, end_time_total;
     struct timespec start_time_serial, end_time_serial;

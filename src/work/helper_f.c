@@ -12,20 +12,24 @@
 
 #define COMMAND_LINE_OPTIONS 3
 
-// Structure to store file information
+/// @brief Structure to store file information from readdir.
 typedef struct {
-    char *name;
-    size_t size;
+    char *name; 
+    size_t size; 
 } FileInfo;
 
-
-// Helper function to extract a numeric value from a string
+/// @brief Extracts a numeric value from a string.
+/// @param str Input string containing the numeric value.
+/// @return The extracted numeric value as an integer. Returns 0 if no numeric value is found.
 int extract_number(const char *str) {
-    while (*str && !isdigit(*str)) str++; // Skip non-digit characters
-    return isdigit(*str) ? atoi(str) : 0; // Convert number to integer
+    while (*str && !isdigit(*str)) str++;
+    return isdigit(*str) ? atoi(str) : 0;
 }
 
-// Comparison function for qsort, when using name sorting
+/// @brief Compares two files by name using natural order.
+/// @param a Pointer to the first file.
+/// @param b Pointer to the second file.
+/// @return A negative value if file1 < file2, zero if file1 == file2, or a positive value if file1 > file2.
 int compare_by_name_natural(const void *a, const void *b) {
     FileInfo *file1 = (FileInfo *)a;
     FileInfo *file2 = (FileInfo *)b;
@@ -33,38 +37,41 @@ int compare_by_name_natural(const void *a, const void *b) {
     int num1 = extract_number(file1->name);
     int num2 = extract_number(file2->name);
 
-    // Compare by numeric value if both names contain numbers
     if (num1 != num2) {
         return num1 - num2;
     }
 
-    // Fallback to lexicographical comparison if no numbers or equal numbers
     return strcmp(file1->name, file2->name);
 }
 
-// Comparison function for qsort when using size sorting
+/// @brief Compares two files by size.
+/// @param a Pointer to the first file.
+/// @param b Pointer to the second file.
+/// @return A negative value if file1 < file2, zero if file1 == file2, or a positive value if file1 > file2.
 int compare_by_size(const void *a, const void *b) {
     FileInfo *file1 = (FileInfo *)a;
     FileInfo *file2 = (FileInfo *)b;
     return (file1->size < file2->size) ? -1 : (file1->size > file2->size);
 }
 
-
-void process_jpeg_files(const char *directory, const char *sort_option, size_t *file_count, char *output_directory) {
+/// @brief Retrieves JPEG files from a directory and sorts them based on the specified option, loading them to file_list.
+/// @param directory Path to the input directory.
+/// @param sort_option Sorting option (-size or -name).
+/// @param file_count Pointer to the number of files found.
+/// @param output_directory Path to the output directory.
+void get_jpeg_files(const char *directory, const char *sort_option, size_t *file_count, char *output_directory) {
     DIR *d;
     struct dirent *f;
     struct stat st;
     FileInfo *files = NULL;
     size_t capacity = 10;
 
-    // Allocate initial memory for the file array
     files = malloc(capacity * sizeof(FileInfo));
     if (!files) {
         perror("Failed to allocate memory for files array");
         exit(EXIT_FAILURE);
     }
 
-    // Open the input directory
     d = opendir(directory);
     if (!d) {
         perror("Failed to open input directory");
@@ -72,37 +79,30 @@ void process_jpeg_files(const char *directory, const char *sort_option, size_t *
         exit(EXIT_FAILURE);
     }
 
-    // Read directory entries
     while ((f = readdir(d)) != NULL) {
-        // Skip "." and ".."
         if (strcmp(f->d_name, ".") == 0 || strcmp(f->d_name, "..") == 0) {
             continue;
         }
 
-        // Check if file extension is ".jpeg"
         const char *ext = strrchr(f->d_name, '.');
         if (!ext || strcasecmp(ext, ".jpeg") != 0) {
             continue;
         }
 
-        // Build the full file path
         char filepath[512];
         snprintf(filepath, sizeof(filepath), "%s/%s", directory, f->d_name);
 
-        // Check file stats
         if (stat(filepath, &st) == -1 || !S_ISREG(st.st_mode)) {
             perror("stat failed or not a regular file");
             continue;
         }
 
-        // Check if the file already exists in the output directory
         char output_filepath[512];
         snprintf(output_filepath, sizeof(output_filepath), "%s/%s", output_directory, f->d_name);
         if (access(output_filepath, F_OK) == 0) {
-            continue; // File already exists, skip
+            continue;
         }
 
-        // Expand file array if necessary
         if (*file_count == capacity) {
             capacity *= 2;
             FileInfo *new_files = realloc(files, capacity * sizeof(FileInfo));
@@ -118,21 +118,18 @@ void process_jpeg_files(const char *directory, const char *sort_option, size_t *
             files = new_files;
         }
 
-        // Add file information to the list
         files[*file_count].name = strdup(f->d_name);
         files[*file_count].size = st.st_size;
         (*file_count)++;
     }
     closedir(d);
 
-    // Sort files array if necessary
     if (strcmp(sort_option, "-size") == 0) {
         qsort(files, *file_count, sizeof(FileInfo), compare_by_size);
     } else if (strcmp(sort_option, "-name") == 0) {
         qsort(files, *file_count, sizeof(FileInfo), compare_by_name_natural);
     }
 
-    // Allocate and populate the shared file list
     file_list = malloc((*file_count) * sizeof(char *));
     if (!file_list) {
         perror("Failed to allocate memory for file list");
@@ -143,21 +140,24 @@ void process_jpeg_files(const char *directory, const char *sort_option, size_t *
         exit(EXIT_FAILURE);
     }
     for (size_t i = 0; i < *file_count; i++) {
-        file_list[i] = files[i].name; // Transfer ownership
+        file_list[i] = files[i].name;
     }
     free(files);
 }
 
-
-// Function to validate and parse command line arguments
+/// @brief Parses command-line arguments and calls the function to load the file names into file_list.
+/// @param argc 
+/// @param argv 
+/// @param file_count Pointer to the number of files found.
+/// @param output_directory Path to the output directory.
+/// @return The number of threads specified in the command line.
 int read_command_line(int argc, char *argv[], size_t *file_count, char *output_directory) {
     if (argc < COMMAND_LINE_OPTIONS + 1) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 
-    // Retrieve all .jpeg files and updates file_count
-    process_jpeg_files(argv[1], argv[3], file_count, output_directory);
+    get_jpeg_files(argv[1], argv[3], file_count, output_directory);
 
     int num_threads = atoi(argv[2]);
     if (num_threads <= 0) {
@@ -168,12 +168,15 @@ int read_command_line(int argc, char *argv[], size_t *file_count, char *output_d
     return num_threads;
 }
 
-
+/// @brief Edits file paths based on the provided arguments and creates output directories if needed.
+/// @param argc
+/// @param argv
+/// @param output_txt Pointer to the output .txt file path.
+/// @param output_directory Pointer to the output directory path.
 void edit_paths(int argc, char *argv[], char **output_txt, char **output_directory) {
     const char *OUTPUT_DIR = "/old_photo_PAR_B";
     const char *OUTPUT_TXT_PREFIX = "timing_B_";
 
-    // Validate the suffix argument
     char *suffix = NULL;
     if (strcmp(argv[3], "-size") == 0) {
         suffix = "-size.txt";
@@ -184,7 +187,6 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
         exit(EXIT_FAILURE);
     }
 
-    // Create output directory path
     size_t output_dir_len = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1;
     *output_directory = malloc(output_dir_len);
     if (*output_directory == NULL) {
@@ -193,7 +195,6 @@ void edit_paths(int argc, char *argv[], char **output_txt, char **output_directo
     }
     snprintf(*output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
 
-    // Create output timing.txt file path
     size_t output_txt_len = strlen(argv[1]) + strlen("/") + strlen(OUTPUT_TXT_PREFIX) +
                             snprintf(NULL, 0, "%d", atoi(argv[2])) + strlen(suffix) + 1;
     *output_txt = malloc(output_txt_len);
