@@ -7,7 +7,6 @@
 #include <sys/stat.h>
 #include <pthread.h>
 
-#include "image-lib.h"
 #include "helper_f.h"
 
 #define COMMAND_LINE_OPTIONS 3

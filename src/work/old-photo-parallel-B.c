@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     input_directory = argv[1]; // makes argv[1] global
     
-    // Texture read only one time
+    // Texture read to global variable
     in_texture_img = read_png_file("./paper-texture.png");
     if (!in_texture_img) {
         fprintf(stderr, "Error reading texture image.\n");
@@ -69,7 +69,6 @@ int main(int argc, char *argv[]) {
         perror("Failed to create pipe");
         exit(EXIT_FAILURE);
     }
-
     if (pthread_mutex_init(&lock, NULL) != 0) {
         perror("Failed to create mutex");
         exit(EXIT_FAILURE);
@@ -87,16 +86,15 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
     }
-    close(pipe_fd[1]); // Close the write end of the pipe
+    close(pipe_fd[1]);
 
-    // Prep of thread argument parsing
     pthread_t thread_ids[num_threads + 1];
     struct timespec thread_time[num_threads];
 
     clock_gettime(CLOCK_MONOTONIC, &end_time_serial);
 
     // =======================================================================================
-    // Threads that process image
+    // Thread launch to process images
     for (int i = 0; i < num_threads; i++) {
         if (pthread_create(&thread_ids[i], NULL, process_image, NULL) != 0) {
             perror("Failed to create thread");
@@ -112,7 +110,9 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
     // =======================================================================================
-    // Wait for all threads to finish
+    /* Wait for all image threads to finish.
+     * S key press thread is not joined as it is a detached thread  
+     */
     for (int i = 0; i < num_threads; i++) {
         struct timespec *thread_time_ptr;
         if (pthread_join(thread_ids[i], (void **)&thread_time_ptr) != 0) {
@@ -120,11 +120,11 @@ int main(int argc, char *argv[]) {
             free(output_directory);
             exit(EXIT_FAILURE);
         }
-        thread_time[i] = *thread_time_ptr; // Copy the thread time
-        free(thread_time_ptr); // Free the allocated memory
+        thread_time[i] = *thread_time_ptr; 
+        free(thread_time_ptr);
     }
     close(pipe_fd[0]);
-    close(STDIN_FILENO);
+    close(STDIN_FILENO); // Close stdin to stop the key press thread
     // =======================================================================================
 
     // Cleanup
@@ -140,7 +140,6 @@ int main(int argc, char *argv[]) {
 
     printf("All images processed successfully.\n");
 
-
     // =========================== Stat Printing Section =====================================
     clock_gettime(CLOCK_MONOTONIC, &end_time_total);
 
@@ -155,17 +154,15 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    // Print serial time
+    // Prints serial time, thread times and total time
     fprintf(output_file_txt, "\nserial: \t %10jd.%03lds\n", 
             serial_time.tv_sec, serial_time.tv_nsec / 1000000);
 
-    // Print thread times
     for (int i = 0; i < num_threads; i++) {
         fprintf(output_file_txt, "\tthread: %d \t %10jd.%03lds\n", i, 
                 thread_time[i].tv_sec, thread_time[i].tv_nsec / 1000000);
     }
 
-    // Print total time
     fprintf(output_file_txt, "total: \t %10jd.%03lds\n", 
             total_time.tv_sec, total_time.tv_nsec / 1000000);
 

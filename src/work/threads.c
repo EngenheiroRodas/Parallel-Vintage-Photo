@@ -13,7 +13,6 @@
 /// @return Pointer to the total execution time of the thread.
 void *process_image() {
     struct timespec start_thread, end_thread, thread_time;
-
     struct timespec pic_start, pic_end, pic_time;
 
     clock_gettime(CLOCK_MONOTONIC, &start_thread);
@@ -24,12 +23,12 @@ void *process_image() {
 
     gdImagePtr in_img, out_smoothed_img, out_contrast_img, out_textured_img, out_sepia_img;
 
+    // Process images until the pipe is empty. Write end is already closed.
     while (read(pipe_fd[0], &current_file, sizeof(char *)) > 0) {
         clock_gettime(CLOCK_MONOTONIC, &pic_start);
 
-        // Generate output file path and 
+        // Generate output and input file paths
         snprintf(out_file_name, sizeof(out_file_name), "%s/%s", output_directory, current_file);
-
         snprintf(input_path, sizeof(input_path), "%s/%s", input_directory, current_file);
 
         in_img = read_jpeg_file(input_path);
@@ -37,7 +36,6 @@ void *process_image() {
             fprintf(stderr, "Cannot read image: %s\n", input_path);
             continue;
         }
-
         printf("Processing file: %s\n", current_file);
 
         // Process the image through various filters
@@ -64,17 +62,14 @@ void *process_image() {
         // Increment the total time and counter
         pthread_mutex_lock(&lock);
         counter++;
-        // Normalize the time
         total_pic_time.tv_nsec += pic_time.tv_nsec;
-        if (total_pic_time.tv_nsec >= 1000000000) {
+        if (total_pic_time.tv_nsec >= 1000000000) { // Normalize the time
             total_pic_time.tv_nsec -= 1000000000;
             total_pic_time.tv_sec += 1;
         }
         total_pic_time.tv_sec += pic_time.tv_sec;
         pthread_mutex_unlock(&lock);
     }
-
-    // Record thread execution time
     clock_gettime(CLOCK_MONOTONIC, &end_thread);
     thread_time = diff_timespec(&end_thread, &start_thread);
 
@@ -89,6 +84,7 @@ void *process_image() {
 void *handle_key_press() {
     char c;
     double total_time_in_seconds;
+    // read() will return 0 when stdin is closed by main thread
     while (read(STDIN_FILENO, &c, sizeof(char)) > 0) {
         if (c == 's' || c == 'S') {
             printf("\n");
