@@ -9,7 +9,8 @@
 
 #include "helper_f.h"
 
-#define COMMAND_LINE_OPTIONS 3
+// 3 arguments + program name
+#define COMMAND_LINE_OPTIONS 4
 
 /// @brief Structure to store file information from readdir.
 typedef struct {
@@ -73,11 +74,11 @@ int extract_number(const char *str) {
     return isdigit(*str) ? atoi(str) : 0;
 }
 
-/// @brief Compares two files by name using natural order.
+/// @brief Compares two files by name.
 /// @param a Pointer to the first file.
 /// @param b Pointer to the second file.
 /// @return A negative value if file1 < file2, zero if file1 == file2, or a positive value if file1 > file2.
-int compare_by_name_natural(const void *a, const void *b) {
+int compare_by_name(const void *a, const void *b) {
     FileInfo *file1 = (FileInfo *)a;
     FileInfo *file2 = (FileInfo *)b;
 
@@ -174,7 +175,7 @@ void get_jpeg_files(const char *sort_option, size_t *file_count) {
     if (strcmp(sort_option, "-size") == 0) {
         qsort(files, *file_count, sizeof(FileInfo), compare_by_size);
     } else if (strcmp(sort_option, "-name") == 0) {
-        qsort(files, *file_count, sizeof(FileInfo), compare_by_name_natural);
+        qsort(files, *file_count, sizeof(FileInfo), compare_by_name);
     }
 
     file_list = malloc((*file_count) * sizeof(char *));
@@ -198,7 +199,7 @@ void get_jpeg_files(const char *sort_option, size_t *file_count) {
 /// @param file_count Pointer to the number of files found.
 /// @return The number of threads specified in the command line.
 int read_command_line(int argc, char *argv[], size_t *file_count) {
-    if (argc < COMMAND_LINE_OPTIONS + 1) {
+    if (argc < COMMAND_LINE_OPTIONS) {
         fprintf(stderr, "Usage: %s <INPUT_DIR> <NUMBER_THREADS> <MODE>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
