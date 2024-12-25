@@ -3,8 +3,10 @@
 
 extern struct timespec total_pic_time;
 
-void *process_image(void *arg);
+extern gdImagePtr in_texture_img;
 
-void *handle_key_press(void *arg);
+void *process_image();
+
+void *handle_key_press();
 
 #endif
