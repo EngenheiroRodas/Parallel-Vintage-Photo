@@ -12,7 +12,7 @@
 // 3 arguments + program name
 #define COMMAND_LINE_OPTIONS 4
 
-/// @brief Structure to store file information from readdir.
+/// @brief Structure to store file information from readdir and stat.
 typedef struct {
     char *name; 
     size_t size; 
@@ -21,11 +21,11 @@ typedef struct {
 /// @brief Edits file paths of output_txt and global output_directory and creates it.
 /// @param argc 
 /// @param argv 
-/// @param output_txt path to be modified.
-/// @return modified output_txt.
+/// @param output_txt Pointer to store the path of the output timing file.
+/// @return The modified output_txt path.
 char *edit_paths(int argc, char *argv[], char **output_txt) {
-    const char *OUTPUT_DIR = "/old_photo_PAR_B";
-    const char *OUTPUT_TXT_PREFIX = "timing_B_";
+    const char *OUTPUT_DIR = "/old_photo_PAR_B";  // Subdirectory to be appended to the input directory.
+    const char *OUTPUT_TXT_PREFIX = "timing_B_"; // Prefix for the output text file name.
 
     char *suffix = NULL;
     if (strcmp(argv[3], "-size") == 0) {
@@ -34,7 +34,7 @@ char *edit_paths(int argc, char *argv[], char **output_txt) {
         suffix = "-name.txt";
     } else {
         fprintf(stderr, "Invalid mode. Must be '-size' or '-name'.\n");
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);  // Exit if the mode is invalid.
     }
 
     size_t output_dir_len = strlen(argv[1]) + strlen(OUTPUT_DIR) + 1;
@@ -43,6 +43,7 @@ char *edit_paths(int argc, char *argv[], char **output_txt) {
         perror("Failed to allocate memory for output directory path");
         exit(EXIT_FAILURE);
     }
+    // Concatenate the input directory path with the output subdirectory.
     snprintf(output_directory, output_dir_len, "%s%s", argv[1], OUTPUT_DIR);
 
     size_t output_txt_len = strlen(argv[1]) + strlen("/") + strlen(OUTPUT_TXT_PREFIX) +
@@ -50,16 +51,18 @@ char *edit_paths(int argc, char *argv[], char **output_txt) {
     *output_txt = malloc(output_txt_len);
     if (*output_txt == NULL) {
         perror("Failed to allocate memory for output txt path");
-        free(output_directory);
+        free(output_directory);  
         exit(EXIT_FAILURE);
     }
+    // Concatenate the suffix to the output text file name.
     snprintf(*output_txt, output_txt_len, "%s/%s%d%s", argv[1], OUTPUT_TXT_PREFIX, atoi(argv[2]), suffix);
 
+    // Check if the output directory exists, and create it if not.
     struct stat st = {0};
     if (stat(output_directory, &st) == -1) {
-        if (mkdir(output_directory, 0777) == -1) {
+        if (mkdir(output_directory, 0777) == -1) {  // Create the directory with full permissions.
             perror("Failed to create output directory");
-            free(output_directory);
+            free(output_directory); 
             exit(EXIT_FAILURE);
         }
     }
@@ -114,6 +117,10 @@ void get_jpeg_files(const char *sort_option, size_t *file_count) {
     FileInfo *files = NULL;
     size_t capacity = 10;
 
+    char *extension = NULL;
+    char filepath[512], output_filepath[512];
+
+    // Struct to send to qsort
     files = malloc(capacity * sizeof(FileInfo));
     if (!files) {
         perror("Failed to allocate memory for files array");
@@ -132,29 +139,29 @@ void get_jpeg_files(const char *sort_option, size_t *file_count) {
             continue;
         }
 
-        const char *ext = strrchr(f->d_name, '.');
-        if (!ext || strcasecmp(ext, ".jpeg") != 0) {
+        // Check if the file is a JPEG file
+        extension = strrchr(f->d_name, '.');
+        if (!extension || strcasecmp(extension, ".jpeg") != 0) {
             continue;
         }
 
-        char filepath[512];
         snprintf(filepath, sizeof(filepath), "%s/%s", input_directory, f->d_name);
-
-        if (stat(filepath, &st) == -1 || !S_ISREG(st.st_mode)) {
-            perror("stat failed or not a regular file");
+        if (stat(filepath, &st) == -1) {
+            perror("Failed to get file size");
             continue;
         }
 
-        char output_filepath[512];
+        // Checks if the file has already been processed
         snprintf(output_filepath, sizeof(output_filepath), "%s/%s", output_directory, f->d_name);
-        if (access(output_filepath, F_OK) == 0) {
+        if( access(output_filepath, F_OK ) != -1){
             continue;
         }
 
+        // Reallocate memory if necessary
         if (*file_count == capacity) {
             capacity *= 2;
-            FileInfo *new_files = realloc(files, capacity * sizeof(FileInfo));
-            if (!new_files) {
+            FileInfo *temp = realloc(files, capacity * sizeof(FileInfo));
+            if (!temp) {
                 perror("Failed to reallocate memory for files array");
                 closedir(d);
                 for (size_t i = 0; i < *file_count; i++) {
@@ -163,7 +170,7 @@ void get_jpeg_files(const char *sort_option, size_t *file_count) {
                 free(files);
                 exit(EXIT_FAILURE);
             }
-            files = new_files;
+            files = temp;
         }
 
         files[*file_count].name = strdup(f->d_name);
@@ -172,12 +179,14 @@ void get_jpeg_files(const char *sort_option, size_t *file_count) {
     }
     closedir(d);
 
+    // Sort the files based on the specified option
     if (strcmp(sort_option, "-size") == 0) {
         qsort(files, *file_count, sizeof(FileInfo), compare_by_size);
     } else if (strcmp(sort_option, "-name") == 0) {
         qsort(files, *file_count, sizeof(FileInfo), compare_by_name);
     }
 
+    // Load the file names into file_list
     file_list = malloc((*file_count) * sizeof(char *));
     if (!file_list) {
         perror("Failed to allocate memory for file list");
@@ -190,6 +199,8 @@ void get_jpeg_files(const char *sort_option, size_t *file_count) {
     for (size_t i = 0; i < *file_count; i++) {
         file_list[i] = files[i].name;
     }
+
+    // Free the memory allocated for the temporary files array
     free(files);
 }
 

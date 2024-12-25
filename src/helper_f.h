@@ -9,8 +9,8 @@ extern size_t counter, file_count;
 
 extern pthread_mutex_t lock;
 
-int read_command_line(int argc, char *argv[], size_t *file_count);
-
 char *edit_paths(int argc, char *argv[], char **output_txt);
+
+int read_command_line(int argc, char *argv[], size_t *file_count);
 
 #endif
