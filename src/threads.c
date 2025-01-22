@@ -40,21 +40,22 @@ void *process_image() {
 
         // Process the image through various filters
         out_contrast_img = contrast_image(in_img);
+        gdImageDestroy(in_img);
         out_smoothed_img = smooth_image(out_contrast_img);
+        gdImageDestroy(out_contrast_img);
         out_textured_img = texture_image(out_smoothed_img, in_texture_img);
+        gdImageDestroy(out_smoothed_img);
         out_sepia_img = sepia_image(out_textured_img);
+        gdImageDestroy(out_textured_img);
 
         // Write the processed image to the output file
         if (!write_jpeg_file(out_sepia_img, out_file_name)) {
             fprintf(stderr, "Failed to write image: %s\n", out_file_name);
         }
 
-        // Cleanup intermediate images
-        gdImageDestroy(out_contrast_img);
-        gdImageDestroy(out_smoothed_img);
-        gdImageDestroy(out_textured_img);
+        // Cleanup
         gdImageDestroy(out_sepia_img);
-        gdImageDestroy(in_img);
+        
 
         clock_gettime(CLOCK_MONOTONIC, &pic_end);
         pic_time = diff_timespec(&pic_end, &pic_start);
