@@ -57,7 +57,7 @@ gdImagePtr  smooth_image(gdImagePtr in_img){
 		return NULL;
 	}
 
-	int ret = gdImageSmooth(out_img, 20);
+	gdImageSmooth(out_img, 20);
 
 
 	if (!out_img) {
@@ -89,7 +89,7 @@ gdImagePtr  contrast_image(gdImagePtr in_img){
 		return NULL;
 	}
 
-	int ret = gdImageContrast(out_img, -20);
+	gdImageContrast(out_img, -20);
 
 
 	return(out_img);		
@@ -116,7 +116,7 @@ gdImagePtr  sepia_image(gdImagePtr in_img){
 		return NULL;
 	}
 
-	int ret = gdImageColor(out_img, 120, 70, 0, 0);
+	gdImageColor(out_img, 120, 70, 0, 0);
 
 
 	return(out_img);		

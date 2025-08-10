@@ -1,23 +1,22 @@
-# `old-photo-parallel-B`
+# `Parallel Vintage Photo`
 
-**Concurrent Programming (2024/2025) — Project Part B**
+**Concurrent Programming (2024/2025) — Final Project**
 
-A C program that applies an *old-photo* effect to a set of `.jpeg` images using multiple worker threads.  
-This is the Part B variant (dynamic assignment of images to threads) of the course project. Completed as an academic assignment (grade: **18/20**).
+A C program that applies an *old-photo* effect to a set of `.jpeg` images using multiple worker threads. (Graded: **18/20**).
 
 ---
 
 # Overview
 
-`old-photo-parallel-B`:
+`photo-old`:
 
 - Reads all `.jpeg` files from a user-specified directory.
 - Sorts the image list either alphabetically (`-name`) or by increasing file size (`-size`) before processing.
 - Spawns N worker threads (user-specified). Each worker repeatedly **fetches the next available image** from the shared list and processes it until no images remain.
-- Produces processed images with the same filenames under a subdirectory `old_photo_PAR_B` inside the input directory.
+- Produces processed images with the same filenames under a subdirectory `old-photos` inside the input directory.
 - Prints runtime statistics on-demand: press `S` (then Enter) while the program runs to display number processed, number remaining, and average processing time for completed images.
 - Skips already-produced output files when re-run (so partial runs do not re-process existing outputs).
-- Produces a timing file named `timing_B_<n>-size.txt` or `timing_B_<n>-name.txt` (where `<n>` is the number of threads and suffix depends on sorting option) in the input directory containing timing instrumentation.
+- Produces a timing file named `timing-<n>-size.txt` or `timing-<n>-name.txt` (where `<n>` is the number of threads and suffix depends on sorting option) in the input directory containing timing instrumentation.
 
 ---
 
@@ -33,15 +32,12 @@ This is the Part B variant (dynamic assignment of images to threads) of the cour
 
 # Requirements
 
-- POSIX-compatible OS: Linux, WSL, or macOS (as described in project spec).
-- C compiler (e.g., `gcc` or `clang`) with support for POSIX threads.
-- `make` (project includes a `Makefile`).
+- POSIX-compatible OS: Linux, WSL, or macOS; C compiler (gcc); `make`.
+- libGD package 
+ How to install depencdencies
 
-> Note: I avoided listing specific image libraries because the project spec did not mandate them. If your code requires a library (e.g., libjpeg), add that to this section.
 
----
-
-# Build
+# Build 
 
 From the repository root (where `Makefile` is located):
 
@@ -61,10 +57,9 @@ make clean      # remove build artifacts
 # Usage
 
 ```
-./old-photo-parallel-B <images_dir> <num_threads> -name|-size
+./photo-old <images_dir> <num_threads> -name|-size
 ```
 
-Arguments (in this order):
 
 1. `images_dir` — directory containing the `.jpeg` images to process (relative `./...` or absolute `/...`).
 2. `num_threads` — positive integer number of worker threads to spawn.
@@ -73,9 +68,9 @@ Arguments (in this order):
 Examples:
 
 ```bash
-./old-photo-parallel-B ./pasta-1 3 -size
-./old-photo-parallel-B ./pasta-2 8 -name
-./old-photo-parallel-B . 1 -name
+./photo-old ./ex_directory 3 -size
+./photo-old ./ex_directory_2 8 -name
+./photo-old . 1 -name
 ```
 
 While the program runs, type `S` and press Enter to print statistics (processed, remaining, average processing time).
@@ -84,10 +79,10 @@ While the program runs, type `S` and press Enter to print statistics (processed,
 
 # Output
 
-- A directory created inside `images_dir` named `old_photo_PAR_B` will contain the processed images, using the same filenames as the originals.
+- A directory created inside `images_dir` named `old-photos` will contain the processed images, using the same filenames as the originals.
 - A timing file is created in `images_dir` with the name:
-  - `timing_B_<n>-size.txt` (if `-size` was used)
-  - `timing_B_<n>-name.txt` (if `-name` was used)
+  - `timing-<n>-size.txt` (if `-size` was used)
+  - `timing-<n>-name.txt` (if `-name` was used)
 
 Timing file contents should include:
 - total execution time
@@ -150,7 +145,7 @@ If you want to re-run experiments for speedups, run the program with different `
 /
 ├─ Makefile
 ├─ README.md
-├─ old-photo-parallel-B        # compiled binary (or built in bin/)
+├─ photo-old        # compiled binary (or built in bin/)
 ├─ src/                       # C source files (if applicable)
 ├─ report.pdf                 # your project report
 ├─ results/                   # timing files and experiment CSVs
@@ -158,7 +153,7 @@ If you want to re-run experiments for speedups, run the program with different `
 ```
 
 **Submission note (from project spec):** When submitting the final `.zip` (for the course), include:
-- all code for `old-photo-parallel-B`,
+- all code for `photo-old`,
 - the `Makefile`,
 - your report,
 - the timing/result files used in the report.  
@@ -172,10 +167,3 @@ Do **not** include the image dataset files themselves.
 - [ ] Replace the example performance table with your measured data and add graphs.
 - [ ] Add author/contact info if you want it visible on GitHub.
 - [ ] Add a `LICENSE` file if you want to pick a license (e.g., MIT).
-
----
-
-# Notes
-
-- This README adheres to the project PDF (Part B) and does not assert extra dependencies or behaviors beyond the specification.  
-- The performance numbers above are **placeholders**. Replace them with your real experimental data before finalizing the repository.

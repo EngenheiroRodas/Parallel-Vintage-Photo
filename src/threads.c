@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 199309L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +13,7 @@
 
 /// @brief Process an image producing old-photo effect, and write the output in the specified folder.
 /// @return Pointer to the total execution time of the thread.
-void *process_image() {
+void *process_image(void *arg) {
     struct timespec start_thread, end_thread, thread_time;
     struct timespec pic_start, pic_end, pic_time;
 
@@ -82,7 +84,7 @@ void *process_image() {
 
 /// @brief Single thread to watch for key press and print statistics.
 /// @return None.
-void *handle_key_press() {
+void *handle_key_press(void *arg) {
     char c;
     double total_time_in_seconds;
     // read() will return 0 when stdin is closed by main thread
