@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <ctype.h> 
@@ -23,9 +24,9 @@ typedef struct {
 /// @param argv 
 /// @param output_txt Pointer to store the path of the output timing file.
 /// @return The modified output_txt path.
-char *edit_paths(int argc, char *argv[], char **output_txt) {
-    const char *OUTPUT_DIR = "/old_photo_PAR_B";  // Subdirectory to be appended to the input directory.
-    const char *OUTPUT_TXT_PREFIX = "timing_B_"; // Prefix for the output text file name.
+char *edit_paths(char *argv[], char **output_txt) {
+    const char *OUTPUT_DIR = "/old-photos";  // Subdirectory to be appended to the input directory.
+    const char *OUTPUT_TXT_PREFIX = "timing-"; // Prefix for the output text file name.
 
     char *suffix = NULL;
     if (strcmp(argv[3], "-size") == 0) {

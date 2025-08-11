@@ -6,11 +6,15 @@
  *                           old-photo-parallel-B.c
  * 
  *****************************************************************************/
+
+#define _POSIX_C_SOURCE 199309L
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <time.h>
 
 #include "image-lib.h"
 #include "helper_f.h"
@@ -59,7 +63,7 @@ int main(int argc, char *argv[]) {
     input_directory = argv[1]; // makes argv[1] global
     
     // Texture read to global variable
-    in_texture_img = read_png_file("./paper-texture.png");
+    in_texture_img = read_png_file("./assets/paper-texture.png");
     if (!in_texture_img) {
         fprintf(stderr, "Error reading texture image.\n");
         pthread_exit(NULL);
@@ -74,7 +78,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    output_txt = edit_paths(argc, argv, &output_txt);
+    output_txt = edit_paths(argv, &output_txt);
 
     num_threads = read_command_line(argc, argv, &file_count);
     

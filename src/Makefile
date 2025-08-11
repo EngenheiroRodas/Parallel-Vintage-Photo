@@ -1,12 +1,12 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -O3
+CFLAGS = -O3 -std=c23 -Wall -Wextra 
 LDFLAGS= -lpthread -lgd
 
 # Source files and target
-SRCS = old-photo-parallel-B.c helper_f.c threads.c image-lib.c
+SRCS = photo-old.c helper_f.c threads.c image-lib.c
 OBJS = $(SRCS:.c=.o)
-TARGET = old-photo-parallel-B
+TARGET = photo-old
 
 # Default target to build the program
 all: $(TARGET)
