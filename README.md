@@ -18,7 +18,7 @@ A multi-threaded C program that applies an *old-photo* effect to `.jpeg` images 
 
 ## Requirements
 
-- **OS & tools**: Linux, WSL, or macOS; `gcc`; `make`.
+- **OS & tools**: Linux, WSL, or macOS; `gcc`.
 - **libGD** for image manipulation:  
   - **Ubuntu/Debian**:
     ```bash
