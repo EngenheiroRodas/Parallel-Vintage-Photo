@@ -4,9 +4,9 @@ CFLAGS = -O3 -std=c23 -Wall -Wextra
 LDFLAGS= -lpthread -lgd
 
 # Source files and target
-SRCS = photo-old.c helper_f.c threads.c image-lib.c
+SRCS = src/photo-old.c src/helper_f.c src/threads.c src/image-lib.c
 OBJS = $(SRCS:.c=.o)
-TARGET = photo-old
+TARGET = build/photo-old
 
 # Default target to build the program
 all: $(TARGET)
@@ -19,14 +19,10 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Clean only the executable and object files
+# Clean only the object files
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(OBJS)
 
-# Clean all generated files and directories
+# Clean all the executable and object files
 clean_all: clean
 	rm -fr ./*-dir
-
-# Run the program
-run: all
-	./$(TARGET)
