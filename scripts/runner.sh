@@ -1,6 +1,6 @@
 #! /bin/bash
 
-threads_num=(1 2 4 8 12 16 32) # array of threads to test
+threads_num=(1 2 3 4 6 8 10 12 16 24 32) # array of threads to test
 
 read -p "Enter the .jpeg directory: " dataset_dir
 if [ -z "$dataset_dir" ]; then # if string is "zero", set default
