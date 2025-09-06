@@ -7,24 +7,26 @@ import sys
 
 from extractor import extract_total
 
-# threads = sys.argv[2:]
 
 
 if __name__ == "__main__":
 
-    # dataset_dir = sys.argv[1]
-    # mode = sys.argv[3]
+    dataset_dir = sys.argv[1]
 
+    mode = sys.argv[2]
 
+    threads = sys.argv[3:]
 
-    dataset_dir = "datasets/Dataset1"
-    mode = "-name"
-    
-    filename = f"{dataset_dir}/timing-1{mode}.txt"
+    total = [None] * len(threads)
 
-    total = extract_total(filename)
+    threads = tuple(int(x) for x in threads)
 
-    if total is not None:
-        print(f"{filename}: Found total {total}")
-    else:
-        print(f"{filename}: No total found")
+    for i in range(len(threads)):
+
+        filename = f"{dataset_dir}/timing-{threads[i]}{mode}.txt"
+
+        total[i] = extract_total(filename)
+
+    for i in range(len(threads)):
+        print(f"For {threads[i]} threads, took {total[i]} seconds")
+

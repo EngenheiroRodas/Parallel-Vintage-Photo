@@ -1,5 +1,5 @@
 
-serial: 	          0.016s
-	thread: 0 	          6.479s
-	thread: 1 	          7.548s
-total: 	          7.571s
+serial: 	          0.015s
+	thread: 0 	          6.789s
+	thread: 1 	          5.844s
+total: 	          6.808s
