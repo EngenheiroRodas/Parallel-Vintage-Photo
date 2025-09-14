@@ -1,4 +1,0 @@
-
-serial: 	          0.014s
-	thread: 0 	         12.189s
-total: 	         12.207s
