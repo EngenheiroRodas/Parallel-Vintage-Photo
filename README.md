@@ -40,7 +40,8 @@ The analysis script (timing/speedup) requires Python.
 
 1. Create and activate a virtual environment:
    ```bash
-   python -m venv .venv
+   python -m venv .venv # Creating it
+
    source .venv/bin/activate   # Linux/macOS
    .venv\Scripts\activate      # Windows
    ```
@@ -50,36 +51,58 @@ The analysis script (timing/speedup) requires Python.
    pip install -r requirements.txt
    ```
 
-> ⚠️ Running the bash script directly will fail if dependencies are missing, since it calls a Python script to process timing files.
-
 ---
 
 ## Usage
 
 ```bash
-./photo-old <images_dir> <num_threads> -name|-size
+./build/photo-old <images_dir> <num_threads> -name|-size
 ```
 
 Examples:
 
 ```bash
-./photo-old ./ex_directory 3 -size
-./photo-old ./ex_directory_2 8 -name
-./photo-old . 1 -name
+./build/photo-old ./photos 3 -size
+./build/photo-old ./photos 8 -name
+./build/photo-old . 1 -name
 ```
-
-You can also use the helper script:
-
-```bash
-./scripts/runner.sh
-```
-
 ---
 
 ## Output
 
 - Processed images → `<images_dir>/old-photos`
 - Timing file → `<images_dir>/timing_B_<n>-size.txt` or `<images_dir>/timing_B_<n>-name.txt`
-- If the Python script is run:  
-  - An Excel file with speedup timings  
-  - Corresponding plots  
+
+
+
+## Helper Script for Speedup Plotting and Automation
+
+To automate testing and speedup analysis, you can use the provided helper script:
+
+```bash
+./scripts/runner.sh
+```
+
+Make sure you run it from the **project’s root directory** (the folder containing `python/`, `build/`, and `scripts/`).
+
+- **User input**  
+  The script will ask for:
+  - the **directory** containing your photos  
+  - the **mode** (`-name` or `-size`)
+
+---
+
+### ⚙️ Precautions
+
+- **C executable location**  
+  Your compiled binary (`photo-old`) must be inside the `build/` directory.  
+
+- **Thread configuration**  
+  The script currently tests a fixed number of threads:  
+  ```bash
+  threads_num=(1 2 4 8 16)  # array of threads to test
+  ```  
+  You can modify this line in [`runner.sh`](https://github.com/EngenheiroRodas/Parallel-Vintage-Photo/tree/timing_processing/scripts/runner.sh#L12) to customize the thread counts.
+
+> ⚠️ Running the bash script directly will fail if dependencies are missing, since it calls a Python script to process timing files.
+

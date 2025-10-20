@@ -1,8 +1,5 @@
 #! /bin/bash
 
-# $0 is the string containing the script's path (./scripts/runner.sh)
-SCRIPT_DIR="${0%/*}"
-
 threads_num=(1 2 4 8 16) # array of threads to test
 
 read -p "Enter the .jpeg directory: " dataset_dir
@@ -10,7 +7,7 @@ if [ -z "$dataset_dir" ]; then # if string is "zero", set default
     dataset_dir="datasets/Dataset1"
 fi
 
-read -p "Enter the mode (-size or -name): " mode
+read -p "Enter the mode: -size or -name (include the "-"): " mode
 if [ -z "$mode" ]; then # if string is "zero", set default
     mode="-name"
 fi
@@ -29,4 +26,5 @@ fi
 echo -e "\n\nAll processing completed for $dataset_dir and $mode"
 
 
-python3 ./scripts/data_processor.py "$dataset_dir" "$mode" "${threads_num[@]}"
+# Run the Python script to make excel
+python3 ./python/__main__.py "$dataset_dir" "$mode" "${threads_num[@]}"
