@@ -1,5 +1,16 @@
 #! /bin/bash
 
+# Include --help menu for user guidance
+if [[ "$1" == "--help" || "$1" == "-h" ]]; then
+    echo "Usage: ./scripts/runner.sh"
+    echo "This script runs the photo-old program with different thread counts and a defined mode."
+    echo "You will be prompted to enter the .jpeg directory and mode (-size or -name)."
+    echo "If no input is provided, default values will be used."
+    echo "After processing, an Excel report will be generated."
+    exit 0
+fi
+
+
 threads_num=(1 2 4 8 16) # array of threads to test
 
 read -p "Enter the .jpeg directory: " dataset_dir
@@ -13,15 +24,15 @@ if [ -z "$mode" ]; then # if string is "zero", set default
 fi
 
 
-# for num in "${threads_num[@]}"; do
-#     echo -e "Starting $dataset_dir work with $num threads and $mode\n"
+for num in "${threads_num[@]}"; do
+    echo -e "Starting $dataset_dir work with $num threads and $mode\n"
 
-#     ./build/photo-old "$dataset_dir" "$num" "$mode"
+    ./build/photo-old "$dataset_dir" "$num" "$mode"
 
-#     rm -rf "$dataset_dir/old-photos"
+    rm -rf "$dataset_dir/old-photos"
 
-#     echo -e "\nProcessing completed for $dataset_dir with $num threads and $mode\n\n\n"
-# done
+    echo -e "\nProcessing completed for $dataset_dir with $num threads and $mode\n\n\n"
+done
 
 echo -e "\n\nAll processing completed for $dataset_dir and $mode"
 

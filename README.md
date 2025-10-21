@@ -92,17 +92,14 @@ Make sure you run it from the **project’s root directory** (the folder contain
 
 ---
 
-### ⚙️ Precautions
+### ⚙️ Notes
 
-- **C executable location**  
-  Your compiled binary (`photo-old`) must be inside the `build/` directory.  
+- Your compiled binary [`photo-old`](https://github.com/EngenheiroRodas/Parallel-Vintage-Photo/tree/timing_processing/scripts/runner.sh#L19) must be inside the `build/` directory.
 
 - **Thread configuration**  
   The script currently tests a fixed number of threads:  
   ```bash
   threads_num=(1 2 4 8 16)  # array of threads to test
   ```  
-  You can modify this line in [`runner.sh`](https://github.com/EngenheiroRodas/Parallel-Vintage-Photo/tree/timing_processing/scripts/runner.sh#L12) to customize the thread counts.
-
-> ⚠️ Running the bash script directly will fail if dependencies are missing, since it calls a Python script to process timing files.
+  You can modify this line in [`runner.sh`](https://github.com/EngenheiroRodas/Parallel-Vintage-Photo/tree/timing_processing/scripts/runner.sh#L3) to customize the thread counts.
 
