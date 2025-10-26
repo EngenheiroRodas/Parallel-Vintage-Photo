@@ -94,12 +94,12 @@ Make sure you run it from the **project’s root directory** (the folder contain
 
 ### ⚙️ Notes
 
-- Your compiled binary [`photo-old`](https://github.com/EngenheiroRodas/Parallel-Vintage-Photo/blob/main/scripts/runner.sh#L19) must be inside the `build/` directory.
+- Your compiled binary [`photo-old`](https://github.com/EngenheiroRodas/Parallel-Vintage-Photo/blob/main/scripts/runner.sh#L30) must be inside the `build/` directory.
 
 - **Thread configuration**  
   The script currently tests a fixed number of threads:  
   ```bash
   threads_num=(1 2 4 8 16)  # array of threads to test
   ```  
-  You can modify this line in [`runner.sh`](https://github.com/EngenheiroRodas/Parallel-Vintage-Photo/blob/main/scripts/runner.sh#L3) to customize the thread counts.
+  You can modify this line in [`runner.sh`](https://github.com/EngenheiroRodas/Parallel-Vintage-Photo/blob/main/scripts/runner.sh#L14) to customize the thread counts.
 
